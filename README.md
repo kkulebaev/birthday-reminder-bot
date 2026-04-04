@@ -67,6 +67,14 @@ Webhook-related variables:
 - `npm run prisma:migrate:dev`
 - `npm run prisma:migrate:deploy`
 
+## CI
+
+GitHub Actions runs the following checks on push and pull request:
+- `npm run prisma:generate`
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
+
 ## Webhook notes
 
 The bot now runs in webhook mode:
