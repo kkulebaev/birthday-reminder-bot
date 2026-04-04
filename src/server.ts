@@ -6,16 +6,6 @@ function getWebhookPath(): string {
   return process.env.TELEGRAM_WEBHOOK_PATH ?? '/telegram/webhook'
 }
 
-function getBaseUrl(): string | null {
-  const explicitUrl = process.env.APP_BASE_URL?.trim()
-
-  if (explicitUrl) {
-    return explicitUrl.replace(/\/$/, '')
-  }
-
-  return null
-}
-
 function createApp() {
   const app = express()
 
@@ -43,12 +33,6 @@ export async function startServer(): Promise<void> {
   const app = createApp()
 
   await bot.init()
-
-  const baseUrl = getBaseUrl()
-
-  if (baseUrl) {
-    await bot.api.setWebhook(`${baseUrl}${getWebhookPath()}`)
-  }
 
   await new Promise<void>((resolve) => {
     app.listen(port, '0.0.0.0', () => {

@@ -52,7 +52,6 @@ Working beta foundation:
 See `.env.example`.
 
 Webhook-related variables:
-- `APP_BASE_URL` — public HTTPS base URL, for example `https://your-app.up.railway.app`
 - `TELEGRAM_WEBHOOK_PATH` — optional, defaults to `/telegram/webhook`
 - `PORT` — server port, provided by the platform
 
@@ -72,7 +71,7 @@ Webhook-related variables:
 
 The bot now runs in webhook mode:
 - app exposes a POST endpoint for Telegram updates
-- startup can register the webhook automatically when `APP_BASE_URL` is set
+- webhook endpoint is served by the app, but Telegram webhook registration is done manually
 - scheduler remains a separate process/command
 
 ## Scheduler notes
