@@ -8,7 +8,10 @@ Bootstrap is ready:
 - TypeScript project setup
 - grammY bot bootstrap
 - Prisma schema for the first domain model
+- SQL migration skeleton for initial Postgres schema
 - `/start` creates or updates a user and initializes default settings
+- `/help`, `/add`, and `/cancel` are wired
+- `/add` currently uses a minimal in-memory wizard placeholder
 
 ## V1 scope
 
@@ -46,3 +49,8 @@ See `.env.example`.
 - `npm run prisma:generate`
 - `npm run prisma:migrate:dev`
 - `npm run prisma:migrate:deploy`
+
+## Notes about migrations
+
+A hand-written initial migration skeleton is committed under `prisma/migrations`.
+To apply it for real, provide a working `DATABASE_URL` and run Prisma migration commands against a live Postgres instance.
