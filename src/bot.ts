@@ -14,6 +14,7 @@ import {
   toggleBirthdayReminder,
   updateBirthdayNote,
 } from './birthday-detail.js'
+import { handleBirthdayCallback, sendBirthdayDetail } from './birthday-callbacks.js'
 import { formatStartMessage } from './format.js'
 import { formatHelpMessage } from './help.js'
 import { getBirthdayListMessage } from './list-birthdays.js'
@@ -74,7 +75,16 @@ bot.command('list', async (ctx) => {
   }
 
   const user = await upsertUserFromContext(ctx)
-  await ctx.reply(await getBirthdayListMessage(user.id))
+  const result = await getBirthdayListMessage(user.id)
+
+  if (result.replyMarkup) {
+    await ctx.reply(result.text, {
+      reply_markup: result.replyMarkup,
+    })
+    return
+  }
+
+  await ctx.reply(result.text)
 })
 
 bot.command('search', async (ctx) => {
@@ -186,6 +196,28 @@ bot.command('cancel', async (ctx) => {
   const wasCancelled = cancelAddBirthdayFlow(ctx)
 
   await ctx.reply(wasCancelled ? 'Ок, отменил текущий wizard.' : 'Сейчас нечего отменять.')
+})
+
+bot.on('callback_query:data', async (ctx) => {
+  if (!isPrivateChat(ctx)) {
+    return
+  }
+
+  const user = await upsertUserFromContext(ctx)
+  const data = ctx.callbackQuery.data
+
+  if (data.startsWith('birthday:view:')) {
+    const birthdayId = data.replace('birthday:view:', '')
+    await sendBirthdayDetail(ctx, user.id, birthdayId)
+    await ctx.answerCallbackQuery()
+    return
+  }
+
+  const handled = await handleBirthdayCallback(ctx, user.id, data)
+
+  if (!handled) {
+    await ctx.answerCallbackQuery({ text: 'Не понял кнопку' })
+  }
 })
 
 bot.on('message:text', async (ctx, next) => {
