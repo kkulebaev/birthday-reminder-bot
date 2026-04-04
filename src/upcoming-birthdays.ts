@@ -3,20 +3,20 @@ import { prisma } from './db.js'
 import { getMainMenuKeyboard } from './main-menu.js'
 
 const UPCOMING_LIMIT = 5
-const DAY_IN_MS = 24 * 60 * 60 * 1000
+export const DAY_IN_MS = 24 * 60 * 60 * 1000
 
-type UpcomingBirthday = {
+export type UpcomingBirthday = {
   fullName: string
   day: number
   month: number
   nextOccurrence: Date
 }
 
-function getStartOfUtcDay(date: Date): Date {
+export function getStartOfUtcDay(date: Date): Date {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
 }
 
-function getNextOccurrence(day: number, month: number, fromDate: Date): Date {
+export function getNextOccurrence(day: number, month: number, fromDate: Date): Date {
   const currentYear = fromDate.getUTCFullYear()
   const candidateThisYear = new Date(Date.UTC(currentYear, month - 1, day))
 
@@ -27,22 +27,36 @@ function getNextOccurrence(day: number, month: number, fromDate: Date): Date {
   return new Date(Date.UTC(currentYear + 1, month - 1, day))
 }
 
-function getDaysUntil(nextOccurrence: Date, fromDate: Date): number {
+export function getDaysUntil(nextOccurrence: Date, fromDate: Date): number {
   return Math.round((nextOccurrence.getTime() - fromDate.getTime()) / DAY_IN_MS)
 }
 
-function formatDate(date: Date): string {
+export function formatUpcomingDate(date: Date): string {
   const day = String(date.getUTCDate()).padStart(2, '0')
   const month = String(date.getUTCMonth() + 1).padStart(2, '0')
 
   return `${day}.${month}`
 }
 
-function formatUpcomingLine(index: number, birthday: UpcomingBirthday, fromDate: Date): string {
+export function formatUpcomingLine(index: number, birthday: UpcomingBirthday, fromDate: Date): string {
   const daysUntil = getDaysUntil(birthday.nextOccurrence, fromDate)
   const suffix = daysUntil === 0 ? 'сегодня' : `через ${daysUntil} дн.`
 
-  return `${index}. ${formatDate(birthday.nextOccurrence)} — ${birthday.fullName} (${suffix})`
+  return `${index}. ${formatUpcomingDate(birthday.nextOccurrence)} — ${birthday.fullName} (${suffix})`
+}
+
+export function sortUpcomingBirthdays(
+  birthdays: Array<{ fullName: string; day: number; month: number }>,
+  fromDate: Date,
+): UpcomingBirthday[] {
+  return birthdays
+    .map((birthday) => ({
+      fullName: birthday.fullName,
+      day: birthday.day,
+      month: birthday.month,
+      nextOccurrence: getNextOccurrence(birthday.day, birthday.month, fromDate),
+    }))
+    .sort((left, right) => left.nextOccurrence.getTime() - right.nextOccurrence.getTime())
 }
 
 export async function getUpcomingBirthdaysMessage(userId: string): Promise<{ text: string; replyMarkup: InlineKeyboard }> {
@@ -70,15 +84,7 @@ export async function getUpcomingBirthdaysMessage(userId: string): Promise<{ tex
     }
   }
 
-  const upcoming = birthdays
-    .map((birthday) => ({
-      fullName: birthday.fullName,
-      day: birthday.day,
-      month: birthday.month,
-      nextOccurrence: getNextOccurrence(birthday.day, birthday.month, fromDate),
-    }))
-    .sort((left, right) => left.nextOccurrence.getTime() - right.nextOccurrence.getTime())
-    .slice(0, UPCOMING_LIMIT)
+  const upcoming = sortUpcomingBirthdays(birthdays, fromDate).slice(0, UPCOMING_LIMIT)
 
   return {
     text: [
