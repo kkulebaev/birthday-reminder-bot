@@ -18,7 +18,7 @@ type AddBirthdaySession = {
 }
 
 const sessions = new Map<string, AddBirthdaySession>()
-const monthLabels = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек']
+export const monthLabels = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек']
 
 function getUserKey(ctx: Context): string {
   const from = ctx.from
@@ -42,7 +42,7 @@ function clearSession(ctx: Context): boolean {
   return sessions.delete(getUserKey(ctx))
 }
 
-function parseInteger(value: string): number | null {
+export function parseInteger(value: string): number | null {
   if (!/^\d+$/.test(value)) {
     return null
   }
@@ -50,19 +50,19 @@ function parseInteger(value: string): number | null {
   return Number(value)
 }
 
-function validateDay(value: number): boolean {
+export function validateDay(value: number): boolean {
   return value >= 1 && value <= 31
 }
 
-function validateMonth(value: number): boolean {
+export function validateMonth(value: number): boolean {
   return value >= 1 && value <= 12
 }
 
-function validateBirthYear(value: number): boolean {
+export function validateBirthYear(value: number): boolean {
   return value >= 1900 && value <= 2100
 }
 
-function isSkipValue(value: string): boolean {
+export function isSkipValue(value: string): boolean {
   const normalized = value.trim().toLowerCase()
 
   return normalized === 'skip'
