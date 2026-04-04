@@ -3,10 +3,12 @@ import { Bot, type Context } from 'grammy'
 import {
   beginAddBirthdayFlow,
   cancelAddBirthdayFlow,
+  canPickAddBirthdayMonth,
   canSkipAddBirthdayStep,
-  getAddBirthdaySkipKeyboard,
+  getAddBirthdayOptionalKeyboard,
   handleAddBirthdayText,
   isAddBirthdayFlowActive,
+  selectAddBirthdayMonth,
   skipAddBirthdayStep,
 } from './add-birthday.js'
 import {
@@ -37,10 +39,10 @@ if (!token) {
 export const bot = new Bot(token)
 
 async function replyWithOptionalKeyboard(ctx: Context, text: string): Promise<void> {
-  const skipKeyboard = getAddBirthdaySkipKeyboard(ctx)
+  const keyboard = getAddBirthdayOptionalKeyboard(ctx)
 
-  if (skipKeyboard) {
-    await ctx.reply(text, { reply_markup: skipKeyboard })
+  if (keyboard) {
+    await ctx.reply(text, { reply_markup: keyboard })
     return
   }
 
@@ -253,6 +255,18 @@ bot.on('callback_query:data', async (ctx) => {
 
     await ctx.answerCallbackQuery({ text: 'Пропускаю' })
     await replyWithOptionalKeyboard(ctx, await skipAddBirthdayStep(ctx))
+    return
+  }
+
+  if (data.startsWith('birthday:add:month:')) {
+    if (!canPickAddBirthdayMonth(ctx)) {
+      await ctx.answerCallbackQuery({ text: 'Сейчас месяц выбрать нельзя' })
+      return
+    }
+
+    const month = Number(data.replace('birthday:add:month:', ''))
+    await ctx.answerCallbackQuery({ text: 'Месяц выбран' })
+    await replyWithOptionalKeyboard(ctx, selectAddBirthdayMonth(ctx, month))
     return
   }
 

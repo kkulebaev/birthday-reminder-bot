@@ -18,6 +18,7 @@ type AddBirthdaySession = {
 }
 
 const sessions = new Map<string, AddBirthdaySession>()
+const monthLabels = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек']
 
 function getUserKey(ctx: Context): string {
   const from = ctx.from
@@ -80,6 +81,20 @@ function formatBirthdayCreatedMessage(birthday: Birthday): string {
   return `Сохранил: ${birthday.fullName}\nДата: ${day}.${month}${year}${notes}`
 }
 
+function getMonthKeyboard(): InlineKeyboard {
+  const keyboard = new InlineKeyboard()
+
+  monthLabels.forEach((label, index) => {
+    keyboard.text(label, `birthday:add:month:${index + 1}`)
+
+    if ((index + 1) % 3 === 0 && index !== monthLabels.length - 1) {
+      keyboard.row()
+    }
+  })
+
+  return keyboard
+}
+
 export function beginAddBirthdayFlow(ctx: Context): string {
   setSession(ctx, {
     step: 'fullName',
@@ -102,24 +117,34 @@ export function cancelAddBirthdayFlow(ctx: Context): boolean {
   return clearSession(ctx)
 }
 
-export function getAddBirthdaySkipKeyboard(ctx: Context): InlineKeyboard | null {
+export function getAddBirthdayOptionalKeyboard(ctx: Context): InlineKeyboard | null {
   const session = getSession(ctx)
 
   if (!session) {
     return null
   }
 
-  if (session.step !== 'birthYear' && session.step !== 'notes') {
-    return null
+  if (session.step === 'month') {
+    return getMonthKeyboard()
   }
 
-  return new InlineKeyboard().text('Пропустить', 'birthday:add:skip')
+  if (session.step === 'birthYear' || session.step === 'notes') {
+    return new InlineKeyboard().text('Пропустить', 'birthday:add:skip')
+  }
+
+  return null
 }
 
 export function canSkipAddBirthdayStep(ctx: Context): boolean {
   const session = getSession(ctx)
 
   return session?.step === 'birthYear' || session?.step === 'notes'
+}
+
+export function canPickAddBirthdayMonth(ctx: Context): boolean {
+  const session = getSession(ctx)
+
+  return session?.step === 'month'
 }
 
 export async function skipAddBirthdayStep(ctx: Context): Promise<string> {
@@ -146,6 +171,28 @@ export async function skipAddBirthdayStep(ctx: Context): Promise<string> {
   }
 
   return 'Сейчас этот шаг нельзя пропустить.'
+}
+
+export function selectAddBirthdayMonth(ctx: Context, month: number): string {
+  const session = getSession(ctx)
+
+  if (!session || session.step !== 'month') {
+    return 'Сейчас месяц выбрать нельзя.'
+  }
+
+  if (!validateMonth(month)) {
+    return 'Месяц должен быть от 1 до 12.'
+  }
+
+  setSession(ctx, {
+    step: 'birthYear',
+    draft: {
+      ...session.draft,
+      month,
+    },
+  })
+
+  return 'Шаг 4 из 5: отправь год рождения числом или нажми «Пропустить».'
 }
 
 async function finishAddBirthdayFlow(ctx: Context, notes: string | null): Promise<string> {
@@ -219,14 +266,14 @@ export async function handleAddBirthdayText(ctx: Context, text: string): Promise
       },
     })
 
-    return 'Шаг 3 из 5: отправь номер месяца числом от 1 до 12.'
+    return 'Шаг 3 из 5: выбери месяц кнопкой ниже или отправь номер месяца числом от 1 до 12.'
   }
 
   if (session.step === 'month') {
     const month = parseInteger(text.trim())
 
     if (month === null || !validateMonth(month)) {
-      return 'Месяц должен быть числом от 1 до 12.'
+      return 'Выбери месяц кнопкой ниже или отправь число от 1 до 12.'
     }
 
     setSession(ctx, {
