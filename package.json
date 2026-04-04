@@ -8,6 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "scheduler": "tsx src/scheduler.ts",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "prisma:generate": "prisma generate",
@@ -30,6 +31,7 @@
     "globals": "^16.0.0",
     "prisma": "^6.6.0",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vitest": "^3.2.4"
   }
 }

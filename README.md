@@ -69,11 +69,10 @@ Webhook-related variables:
 
 ## CI
 
-GitHub Actions runs the following checks on push and pull request:
-- `npm run prisma:generate`
-- `npm run lint`
-- `npm run typecheck`
-- `npm run build`
+GitHub Actions runs separate workflows on push and pull request:
+- `lint` → `npm run prisma:generate` + `npm run lint`
+- `typecheck` → `npm run prisma:generate` + `npm run typecheck`
+- `test` → `npm run prisma:generate` + `npm run test`
 
 ## Webhook notes
 
