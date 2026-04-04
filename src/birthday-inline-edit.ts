@@ -8,6 +8,11 @@ type InlineEditSession = {
   mode: InlineEditMode
 }
 
+export type InlineEditResult =
+  | { kind: 'missing'; message: string }
+  | { kind: 'invalid'; message: string }
+  | { kind: 'updated'; birthdayId: string; message: string }
+
 const sessions = new Map<string, InlineEditSession>()
 
 function getUserKey(ctx: Context): string {
@@ -68,26 +73,6 @@ function parseDateInput(value: string): { day: number; month: number; birthYear:
   }
 }
 
-function formatBirthdayDetail(input: {
-  fullName: string
-  day: number
-  month: number
-  birthYear: number | null
-  notes: string | null
-  isReminderEnabled: boolean
-}): string {
-  const dayText = String(input.day).padStart(2, '0')
-  const monthText = String(input.month).padStart(2, '0')
-  const yearText = input.birthYear ? `.${input.birthYear}` : ''
-
-  return [
-    `🎂 ${input.fullName}`,
-    `Дата: ${dayText}.${monthText}${yearText}`,
-    `Напоминания: ${input.isReminderEnabled ? 'включены' : 'выключены'}`,
-    `Заметка: ${input.notes ?? '—'}`,
-  ].join('\n')
-}
-
 export function beginInlineEdit(ctx: Context, birthdayId: string, mode: InlineEditMode): string {
   sessions.set(getUserKey(ctx), { birthdayId, mode })
 
@@ -110,11 +95,11 @@ export function hasInlineEditSession(ctx: Context): boolean {
   return sessions.has(getUserKey(ctx))
 }
 
-export async function handleInlineEditText(ctx: Context, userId: string, text: string): Promise<string> {
+export async function handleInlineEditText(ctx: Context, userId: string, text: string): Promise<InlineEditResult> {
   const session = sessions.get(getUserKey(ctx))
 
   if (!session) {
-    return 'Сейчас нечего редактировать.'
+    return { kind: 'missing', message: 'Сейчас нечего редактировать.' }
   }
 
   const birthday = await prisma.birthday.findFirst({
@@ -127,42 +112,42 @@ export async function handleInlineEditText(ctx: Context, userId: string, text: s
 
   if (!birthday) {
     sessions.delete(getUserKey(ctx))
-    return 'Запись не найдена.'
+    return { kind: 'missing', message: 'Запись не найдена.' }
   }
 
   if (session.mode === 'note') {
-    const updated = await prisma.birthday.update({
+    await prisma.birthday.update({
       where: { id: birthday.id },
       data: { notes: text.trim() || null },
     })
 
     sessions.delete(getUserKey(ctx))
-    return ['Готово, заметку обновил.', '', formatBirthdayDetail(updated)].join('\n')
+    return { kind: 'updated', birthdayId: birthday.id, message: 'Готово, заметку обновил.' }
   }
 
   if (session.mode === 'rename') {
     const fullName = text.trim()
 
     if (!fullName) {
-      return 'Имя не должно быть пустым.'
+      return { kind: 'invalid', message: 'Имя не должно быть пустым.' }
     }
 
-    const updated = await prisma.birthday.update({
+    await prisma.birthday.update({
       where: { id: birthday.id },
       data: { fullName },
     })
 
     sessions.delete(getUserKey(ctx))
-    return ['Готово, имя обновил.', '', formatBirthdayDetail(updated)].join('\n')
+    return { kind: 'updated', birthdayId: birthday.id, message: 'Готово, имя обновил.' }
   }
 
   const parsedDate = parseDateInput(text)
 
   if (!parsedDate) {
-    return 'Дата должна быть в формате DD.MM или DD.MM.YYYY.'
+    return { kind: 'invalid', message: 'Дата должна быть в формате DD.MM или DD.MM.YYYY.' }
   }
 
-  const updated = await prisma.birthday.update({
+  await prisma.birthday.update({
     where: { id: birthday.id },
     data: {
       day: parsedDate.day,
@@ -172,5 +157,5 @@ export async function handleInlineEditText(ctx: Context, userId: string, text: s
   })
 
   sessions.delete(getUserKey(ctx))
-  return ['Готово, дату обновил.', '', formatBirthdayDetail(updated)].join('\n')
+  return { kind: 'updated', birthdayId: birthday.id, message: 'Готово, дату обновил.' }
 }

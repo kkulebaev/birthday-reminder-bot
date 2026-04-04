@@ -21,7 +21,7 @@ import {
   toggleBirthdayReminder,
   updateBirthdayNote,
 } from './birthday-detail.js'
-import { handleBirthdayCallback, sendBirthdayDetail } from './birthday-callbacks.js'
+import { handleBirthdayCallback, sendBirthdayDetail, sendUpdatedBirthdayDetail } from './birthday-callbacks.js'
 import { cancelInlineEdit, handleInlineEditText, hasInlineEditSession } from './birthday-inline-edit.js'
 import { formatStartMessage } from './format.js'
 import { formatHelpMessage } from './help.js'
@@ -341,8 +341,14 @@ bot.on('message:text', async (ctx, next) => {
   const user = await upsertUserFromContext(ctx)
 
   if (hasInlineEditSession(ctx)) {
-    await ctx.reply(await handleInlineEditText(ctx, user.id, text))
-    await sendMainMenu(ctx)
+    const result = await handleInlineEditText(ctx, user.id, text)
+
+    if (result.kind === 'updated') {
+      await sendUpdatedBirthdayDetail(ctx, user.id, result.birthdayId, result.message)
+      return
+    }
+
+    await ctx.reply(result.message)
     return
   }
 

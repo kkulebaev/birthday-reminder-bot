@@ -22,7 +22,7 @@ function formatDate(day: number, month: number, birthYear: number | null): strin
   return `${dayText}.${monthText}${yearText}`
 }
 
-function formatDetailText(record: BirthdayRecord): string {
+export function formatDetailText(record: BirthdayRecord): string {
   return [
     `🎂 ${record.fullName}`,
     `Дата: ${formatDate(record.day, record.month, record.birthYear)}`,
@@ -31,7 +31,7 @@ function formatDetailText(record: BirthdayRecord): string {
   ].join('\n')
 }
 
-function getDetailKeyboard(recordId: string): InlineKeyboard {
+export function getDetailKeyboard(recordId: string): InlineKeyboard {
   return new InlineKeyboard()
     .text('🔔 Напоминания', `birthday:toggle:${recordId}`)
     .text('🗑 Удалить', `birthday:delete:${recordId}`)
@@ -98,6 +98,23 @@ export async function sendBirthdayDetail(ctx: Context, userId: string, birthdayI
   }
 
   await ctx.reply(formatDetailText(record), {
+    reply_markup: getDetailKeyboard(record.id),
+  })
+}
+
+export async function sendUpdatedBirthdayDetail(ctx: Context, userId: string, birthdayId: string, successMessage?: string): Promise<void> {
+  const record = await getOwnedBirthday(userId, birthdayId)
+
+  if (!record) {
+    await ctx.reply('Запись не найдена.')
+    return
+  }
+
+  const text = successMessage
+    ? [successMessage, '', formatDetailText(record)].join('\n')
+    : formatDetailText(record)
+
+  await ctx.reply(text, {
     reply_markup: getDetailKeyboard(record.id),
   })
 }
