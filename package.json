@@ -7,6 +7,7 @@
     "dev": "tsx src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
+    "scheduler": "tsx src/scheduler.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "prisma:generate": "prisma generate",

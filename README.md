@@ -4,22 +4,29 @@ Telegram-first birthday reminder bot.
 
 ## Current status
 
-Bootstrap is ready:
+Working beta foundation:
 - TypeScript project setup
 - grammY bot bootstrap
-- Prisma schema for the first domain model
-- Initial Postgres migration applied successfully
-- `/start` creates or updates a user and initializes default settings
-- `/help`, `/add`, and `/cancel` are wired
-- `/add` now saves birthdays to Postgres through Prisma
+- Prisma schema and Postgres migration
+- CRUD-style Telegram commands for birthday records
+- Scheduler entrypoint for birthday notifications
+- Delivery logging via `delivery_logs`
 
-## V1 scope
+## Available bot commands
 
-- Multi-user early beta
-- Telegram bot for managing birthdays
-- Birthdays stored in Postgres
-- Daily birthday notifications sent by the same bot
-- Scheduler-driven delivery with idempotent delivery logs
+- `/start`
+- `/help`
+- `/add`
+- `/list`
+- `/search <name>`
+- `/view <name>`
+- `/note <name> | <text>`
+- `/toggle <name>`
+- `/rename <name> | <new name>`
+- `/setdate <name> | <DD.MM or DD.MM.YYYY>`
+- `/delete <name>`
+- `/cancel`
+- `/ping`
 
 ## Stack
 
@@ -29,7 +36,7 @@ Bootstrap is ready:
 - Prisma
 - Postgres
 
-## Planned domain model
+## Domain model
 
 - `users`
 - `user_settings`
@@ -44,8 +51,20 @@ See `.env.example`.
 
 - `npm run dev`
 - `npm run build`
+- `npm run start`
+- `npm run scheduler`
 - `npm run typecheck`
 - `npm run lint`
 - `npm run prisma:generate`
 - `npm run prisma:migrate:dev`
 - `npm run prisma:migrate:deploy`
+
+## Scheduler notes
+
+Current scheduler behavior:
+- checks birthdays for today in `Europe/Moscow`
+- sends notifications through the same Telegram bot
+- writes delivery status into `delivery_logs`
+- prevents duplicate successful sends for the same birthday and occurrence date
+
+This is the first scheduler cut and can be refined further with explicit notify-at gating, retries, and periodic deployment wiring.
