@@ -27,9 +27,9 @@ export async function getBirthdayListMessage(userId: string): Promise<{ text: st
   if (birthdays.length === 0) {
     return {
       text: [
-        'Список пока пуст.',
+        'Пока тут пусто.',
         '',
-        'Добавь первую запись командой /add.',
+        'Добавь первую запись командой /add 🎂',
       ].join('\n'),
     }
   }
@@ -49,5 +49,5 @@ export async function getBirthdayListMessage(userId: string): Promise<{ text: st
 }
 
 export function getListBackKeyboard(): InlineKeyboard {
-  return new InlineKeyboard().text('⬅️ Назад к списку', 'birthday:list')
+  return new InlineKeyboard().text('⬅️ К списку', 'birthday:list')
 }

@@ -59,9 +59,9 @@ export async function getUpcomingBirthdaysMessage(userId: string): Promise<strin
 
   if (birthdays.length === 0) {
     return [
-      'Список пока пуст.',
+      'Пока тут пусто.',
       '',
-      'Добавь первую запись командой /add.',
+      'Добавь первую запись командой /add 🎂',
     ].join('\n')
   }
 

@@ -24,7 +24,7 @@ function formatDate(day: number, month: number, birthYear: number | null): strin
 
 function formatDetailText(record: BirthdayRecord): string {
   return [
-    `Full Name: ${record.fullName}`,
+    `🎂 ${record.fullName}`,
     `Дата: ${formatDate(record.day, record.month, record.birthYear)}`,
     `Напоминания: ${record.isReminderEnabled ? 'включены' : 'выключены'}`,
     `Заметка: ${record.notes ?? '—'}`,
@@ -33,14 +33,14 @@ function formatDetailText(record: BirthdayRecord): string {
 
 function getDetailKeyboard(recordId: string): InlineKeyboard {
   return new InlineKeyboard()
-    .text('🔔 Toggle', `birthday:toggle:${recordId}`)
-    .text('🗑 Delete', `birthday:delete:${recordId}`)
+    .text('🔔 Напоминания', `birthday:toggle:${recordId}`)
+    .text('🗑 Удалить', `birthday:delete:${recordId}`)
     .row()
-    .text('📝 Note', `birthday:edit-note:${recordId}`)
-    .text('✏️ Rename', `birthday:edit-rename:${recordId}`)
+    .text('📝 Заметка', `birthday:edit-note:${recordId}`)
+    .text('✏️ Имя', `birthday:edit-rename:${recordId}`)
     .row()
-    .text('📅 Date', `birthday:edit-date:${recordId}`)
-    .text('⬅️ Назад к списку', 'birthday:list')
+    .text('📅 Дата', `birthday:edit-date:${recordId}`)
+    .text('⬅️ К списку', 'birthday:list')
 }
 
 async function getOwnedBirthday(userId: string, birthdayId: string): Promise<BirthdayRecord | null> {
@@ -145,7 +145,7 @@ export async function handleBirthdayCallback(ctx: Context, userId: string, data:
     })
 
     await editCallbackMessage(ctx, formatDetailText(updated), getDetailKeyboard(updated.id))
-    await ctx.answerCallbackQuery({ text: 'Статус напоминаний обновлён' })
+    await ctx.answerCallbackQuery({ text: 'Готово' })
     return true
   }
 
@@ -156,12 +156,12 @@ export async function handleBirthdayCallback(ctx: Context, userId: string, data:
     })
 
     await editCallbackMessage(ctx, `Удалил запись: ${record.fullName}`, getListBackKeyboard())
-    await ctx.answerCallbackQuery({ text: 'Запись удалена' })
+    await ctx.answerCallbackQuery({ text: 'Удалено' })
     return true
   }
 
   if (action === 'edit-note') {
-    await ctx.answerCallbackQuery({ text: 'Жду новую заметку' })
+    await ctx.answerCallbackQuery({ text: 'Жду заметку' })
     await ctx.reply(beginInlineEdit(ctx, record.id, 'note'))
     return true
   }
