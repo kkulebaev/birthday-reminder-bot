@@ -33,10 +33,12 @@ export async function handleMainMenuCallback(ctx: Context, userId: string, data:
       await ctx.api.editMessageText(ctx.chat.id, ctx.callbackQuery.message.message_id, result.text, {
         reply_markup: result.replyMarkup,
       })
-    } else {
-      await ctx.reply(result.text, result.replyMarkup ? {
+    } else if (result.replyMarkup) {
+      await ctx.reply(result.text, {
         reply_markup: result.replyMarkup,
-      } : undefined)
+      })
+    } else {
+      await ctx.reply(result.text)
     }
 
     await ctx.answerCallbackQuery()

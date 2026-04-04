@@ -346,6 +346,15 @@ bot.command('ping', async (ctx) => {
   await ctx.reply('pong')
 })
 
+bot.hears(/^\/[A-Za-z0-9_]+(?:@\w+)?(?:\s.*)?$/, async (ctx) => {
+  if (!isPrivateChat(ctx)) {
+    return
+  }
+
+  await ctx.reply('Не знаю такую команду. Открой /menu или /help.')
+  await sendMainMenu(ctx)
+})
+
 bot.catch((error) => {
   console.error('Bot error', error)
 })
