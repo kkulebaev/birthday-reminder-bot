@@ -22,6 +22,7 @@ import { getBirthdayListMessage } from './list-birthdays.js'
 import { notificationBot } from './notification-bot.js'
 import { getBirthdaySearchMessage } from './search-birthdays.js'
 import { sendTestNotification } from './test-notification.js'
+import { getUpcomingBirthdaysMessage } from './upcoming-birthdays.js'
 import { isPrivateChat, upsertUserFromContext } from './user.js'
 
 const token = process.env.TELEGRAM_BOT_TOKEN
@@ -86,6 +87,15 @@ bot.command('list', async (ctx) => {
   }
 
   await ctx.reply(result.text)
+})
+
+bot.command('upcoming', async (ctx) => {
+  if (!isPrivateChat(ctx)) {
+    return
+  }
+
+  const user = await upsertUserFromContext(ctx)
+  await ctx.reply(await getUpcomingBirthdaysMessage(user.id))
 })
 
 bot.command('search', async (ctx) => {
