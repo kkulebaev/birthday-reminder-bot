@@ -4,6 +4,10 @@ import { formatHelpMessage } from './help.js'
 import { getBirthdayListMessage } from './list-birthdays.js'
 import { getUpcomingBirthdaysMessage } from './upcoming-birthdays.js'
 
+export function getMainMenuText(): string {
+  return 'Главное меню:'
+}
+
 export function getMainMenuKeyboard(): InlineKeyboard {
   return new InlineKeyboard()
     .text('➕ Добавить', 'menu:add')
@@ -18,7 +22,7 @@ export function getHomeButtonKeyboard(): InlineKeyboard {
 }
 
 export async function sendMainMenu(ctx: Context): Promise<void> {
-  await ctx.reply('Главное меню:', {
+  await ctx.reply(getMainMenuText(), {
     reply_markup: getMainMenuKeyboard(),
   })
 }
@@ -26,7 +30,7 @@ export async function sendMainMenu(ctx: Context): Promise<void> {
 export async function handleMainMenuCallback(ctx: Context, userId: string, data: string): Promise<boolean> {
   if (data === 'menu:home') {
     if (ctx.chat?.id && ctx.callbackQuery?.message?.message_id) {
-      await ctx.api.editMessageText(ctx.chat.id, ctx.callbackQuery.message.message_id, 'Главное меню:', {
+      await ctx.api.editMessageText(ctx.chat.id, ctx.callbackQuery.message.message_id, getMainMenuText(), {
         reply_markup: getMainMenuKeyboard(),
       })
     } else {

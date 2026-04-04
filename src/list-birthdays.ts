@@ -3,7 +3,7 @@ import { prisma } from './db.js'
 import { BIRTHDAY_PAGE_SIZE, formatBirthdayLine } from './birthday-format.js'
 import { getMainMenuKeyboard } from './main-menu.js'
 
-function createBirthdayListKeyboard(idsAndNames: Array<{ id: string; fullName: string }>): InlineKeyboard {
+export function createBirthdayListKeyboard(idsAndNames: Array<{ id: string; fullName: string }>): InlineKeyboard {
   const keyboard = new InlineKeyboard()
 
   for (const item of idsAndNames) {
@@ -13,6 +13,24 @@ function createBirthdayListKeyboard(idsAndNames: Array<{ id: string; fullName: s
   keyboard.text('🏠 Главное меню', 'menu:home')
 
   return keyboard
+}
+
+export function formatEmptyBirthdayListMessage(): string {
+  return [
+    'Пока тут пусто.',
+    '',
+    'Добавь первую запись командой /add 🎂',
+  ].join('\n')
+}
+
+export function formatBirthdayListMessage(lines: string[]): string {
+  return [
+    'Твои дни рождения:',
+    '',
+    ...lines,
+    '',
+    'Нажми на имя ниже, чтобы открыть карточку.',
+  ].join('\n')
 }
 
 export async function getBirthdayListMessage(userId: string): Promise<{ text: string; replyMarkup?: InlineKeyboard }> {
@@ -29,11 +47,7 @@ export async function getBirthdayListMessage(userId: string): Promise<{ text: st
 
   if (birthdays.length === 0) {
     return {
-      text: [
-        'Пока тут пусто.',
-        '',
-        'Добавь первую запись командой /add 🎂',
-      ].join('\n'),
+      text: formatEmptyBirthdayListMessage(),
       replyMarkup: getMainMenuKeyboard(),
     }
   }
@@ -41,13 +55,7 @@ export async function getBirthdayListMessage(userId: string): Promise<{ text: st
   const lines = birthdays.map((birthday, index) => formatBirthdayLine(index + 1, birthday))
 
   return {
-    text: [
-      'Твои дни рождения:',
-      '',
-      ...lines,
-      '',
-      'Нажми на имя ниже, чтобы открыть карточку.',
-    ].join('\n'),
+    text: formatBirthdayListMessage(lines),
     replyMarkup: createBirthdayListKeyboard(birthdays.map((birthday) => ({ id: birthday.id, fullName: birthday.fullName }))),
   }
 }
