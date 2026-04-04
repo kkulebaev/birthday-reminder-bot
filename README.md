@@ -11,6 +11,7 @@ Working beta foundation:
 - CRUD-style Telegram commands for birthday records
 - Scheduler entrypoint for birthday notifications
 - Delivery logging via `delivery_logs`
+- Test notification command
 
 ## Available bot commands
 
@@ -25,6 +26,7 @@ Working beta foundation:
 - `/rename <name> | <new name>`
 - `/setdate <name> | <DD.MM or DD.MM.YYYY>`
 - `/delete <name>`
+- `/test_notification`
 - `/cancel`
 - `/ping`
 
@@ -62,9 +64,10 @@ See `.env.example`.
 ## Scheduler notes
 
 Current scheduler behavior:
-- checks birthdays for today in `Europe/Moscow`
+- checks birthdays for today in each user's configured timezone
+- respects `notify_at` as a "not earlier than" threshold
 - sends notifications through the same Telegram bot
 - writes delivery status into `delivery_logs`
 - prevents duplicate successful sends for the same birthday and occurrence date
 
-This is the first scheduler cut and can be refined further with explicit notify-at gating, retries, and periodic deployment wiring.
+Further improvements can still include retry strategy and deployment wiring for periodic execution.

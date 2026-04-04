@@ -17,7 +17,9 @@ import {
 import { formatStartMessage } from './format.js'
 import { formatHelpMessage } from './help.js'
 import { getBirthdayListMessage } from './list-birthdays.js'
+import { notificationBot } from './notification-bot.js'
 import { getBirthdaySearchMessage } from './search-birthdays.js'
+import { sendTestNotification } from './test-notification.js'
 import { isPrivateChat, upsertUserFromContext } from './user.js'
 
 const token = process.env.TELEGRAM_BOT_TOKEN
@@ -159,6 +161,21 @@ bot.command('delete', async (ctx) => {
   const query = String(ctx.match).trim()
 
   await ctx.reply(await softDeleteBirthday(user.id, query))
+})
+
+bot.command('test_notification', async (ctx) => {
+  if (!isPrivateChat(ctx)) {
+    return
+  }
+
+  const chatId = ctx.chat?.id
+
+  if (chatId === undefined) {
+    throw new Error('Chat is missing in context')
+  }
+
+  await sendTestNotification(notificationBot, String(chatId))
+  await ctx.reply('Тестовое уведомление отправил.')
 })
 
 bot.command('cancel', async (ctx) => {

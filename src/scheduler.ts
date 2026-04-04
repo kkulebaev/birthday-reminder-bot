@@ -1,19 +1,14 @@
 import 'dotenv/config'
-import { DeliveryStatus } from '@prisma/client'
+import { DeliveryStatus, type Birthday } from '@prisma/client'
 import { Bot } from 'grammy'
 import { prisma } from './db.js'
 import { formatBirthdayNotification } from './notification-format.js'
 
 type DueBirthday = {
-  birthdayId: string
-  userId: string
+  birthday: Birthday
   telegramChatId: string
-  fullName: string
-  day: number
-  month: number
-  birthYear: number | null
-  notes: string | null
-  isReminderEnabled: boolean
+  timezone: string
+  notifyAt: string
 }
 
 const token = process.env.TELEGRAM_BOT_TOKEN
@@ -24,42 +19,94 @@ if (!token) {
 
 const bot = new Bot(token)
 
-function getTodayUtcDate(): Date {
-  const now = new Date()
-
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
-}
-
-function getMoscowDateParts(): { day: number; month: number } {
-  const formatter = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Europe/Moscow',
-    day: '2-digit',
+function getDatePartsInTimezone(date: Date, timeZone: string): { year: number; month: number; day: number } {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
     month: '2-digit',
+    day: '2-digit',
   })
 
-  const parts = formatter.formatToParts(new Date())
-  const dayPart = parts.find((part) => part.type === 'day')?.value
+  const parts = formatter.formatToParts(date)
+  const yearPart = parts.find((part) => part.type === 'year')?.value
   const monthPart = parts.find((part) => part.type === 'month')?.value
+  const dayPart = parts.find((part) => part.type === 'day')?.value
 
-  if (!dayPart || !monthPart) {
-    throw new Error('Failed to resolve Moscow date parts')
+  if (!yearPart || !monthPart || !dayPart) {
+    throw new Error(`Failed to resolve date parts for timezone ${timeZone}`)
   }
 
   return {
-    day: Number(dayPart),
+    year: Number(yearPart),
     month: Number(monthPart),
+    day: Number(dayPart),
   }
 }
 
-async function getDueBirthdays(): Promise<DueBirthday[]> {
-  const { day, month } = getMoscowDateParts()
+function getMinutesInTimezone(date: Date, timeZone: string): number {
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
 
+  const parts = formatter.formatToParts(date)
+  const hourPart = parts.find((part) => part.type === 'hour')?.value
+  const minutePart = parts.find((part) => part.type === 'minute')?.value
+
+  if (!hourPart || !minutePart) {
+    throw new Error(`Failed to resolve time parts for timezone ${timeZone}`)
+  }
+
+  return Number(hourPart) * 60 + Number(minutePart)
+}
+
+function parseNotifyAtToMinutes(notifyAt: string): number | null {
+  const match = notifyAt.match(/^(\d{2}):(\d{2})$/)
+
+  if (!match) {
+    return null
+  }
+
+  const [, hoursText, minutesText] = match
+  const hours = Number(hoursText)
+  const minutes = Number(minutesText)
+
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+    return null
+  }
+
+  return hours * 60 + minutes
+}
+
+function getOccurrenceDateForTimezone(date: Date, timeZone: string): Date {
+  const parts = getDatePartsInTimezone(date, timeZone)
+
+  return new Date(Date.UTC(parts.year, parts.month - 1, parts.day))
+}
+
+function isBirthdayToday(birthday: Birthday, timeZone: string, now: Date): boolean {
+  const parts = getDatePartsInTimezone(now, timeZone)
+
+  return birthday.day === parts.day && birthday.month === parts.month
+}
+
+function isNotifyTimeReached(notifyAt: string, timeZone: string, now: Date): boolean {
+  const notifyMinutes = parseNotifyAtToMinutes(notifyAt)
+
+  if (notifyMinutes === null) {
+    return true
+  }
+
+  return getMinutesInTimezone(now, timeZone) >= notifyMinutes
+}
+
+async function getDueBirthdays(now: Date): Promise<DueBirthday[]> {
   const birthdays = await prisma.birthday.findMany({
     where: {
       deletedAt: null,
       isReminderEnabled: true,
-      day,
-      month,
       user: {
         settings: {
           is: {
@@ -69,21 +116,50 @@ async function getDueBirthdays(): Promise<DueBirthday[]> {
       },
     },
     include: {
-      user: true,
+      user: {
+        include: {
+          settings: true,
+        },
+      },
     },
   })
 
-  return birthdays.map((birthday) => ({
-    birthdayId: birthday.id,
-    userId: birthday.userId,
-    telegramChatId: birthday.user.telegramChatId,
-    fullName: birthday.fullName,
-    day: birthday.day,
-    month: birthday.month,
-    birthYear: birthday.birthYear,
-    notes: birthday.notes,
-    isReminderEnabled: birthday.isReminderEnabled,
-  }))
+  return birthdays
+    .filter((birthday) => {
+      const settings = birthday.user.settings
+
+      if (!settings) {
+        return false
+      }
+
+      return isBirthdayToday(birthday, settings.timezone, now) && isNotifyTimeReached(settings.notifyAt, settings.timezone, now)
+    })
+    .map((birthday) => {
+      const settings = birthday.user.settings
+
+      if (!settings) {
+        throw new Error('User settings are missing for due birthday')
+      }
+
+      return {
+        birthday: {
+          id: birthday.id,
+          userId: birthday.userId,
+          fullName: birthday.fullName,
+          day: birthday.day,
+          month: birthday.month,
+          birthYear: birthday.birthYear,
+          notes: birthday.notes,
+          isReminderEnabled: birthday.isReminderEnabled,
+          deletedAt: birthday.deletedAt,
+          createdAt: birthday.createdAt,
+          updatedAt: birthday.updatedAt,
+        },
+        telegramChatId: birthday.user.telegramChatId,
+        timezone: settings.timezone,
+        notifyAt: settings.notifyAt,
+      }
+    })
 }
 
 async function markDeliveryAttempt(input: {
@@ -154,12 +230,12 @@ async function hasSuccessfulDelivery(userId: string, birthdayId: string, occurre
   return deliveryLog?.status === DeliveryStatus.sent
 }
 
-export async function runScheduler(): Promise<void> {
-  const occurrenceDate = getTodayUtcDate()
-  const dueBirthdays = await getDueBirthdays()
+export async function runScheduler(now: Date = new Date()): Promise<void> {
+  const dueBirthdays = await getDueBirthdays(now)
 
   for (const dueBirthday of dueBirthdays) {
-    const alreadySent = await hasSuccessfulDelivery(dueBirthday.userId, dueBirthday.birthdayId, occurrenceDate)
+    const occurrenceDate = getOccurrenceDateForTimezone(now, dueBirthday.timezone)
+    const alreadySent = await hasSuccessfulDelivery(dueBirthday.birthday.userId, dueBirthday.birthday.id, occurrenceDate)
 
     if (alreadySent) {
       continue
@@ -168,24 +244,12 @@ export async function runScheduler(): Promise<void> {
     try {
       const message = await bot.api.sendMessage(
         dueBirthday.telegramChatId,
-        formatBirthdayNotification({
-          id: dueBirthday.birthdayId,
-          userId: dueBirthday.userId,
-          fullName: dueBirthday.fullName,
-          day: dueBirthday.day,
-          month: dueBirthday.month,
-          birthYear: dueBirthday.birthYear,
-          notes: dueBirthday.notes,
-          isReminderEnabled: dueBirthday.isReminderEnabled,
-          deletedAt: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }),
+        formatBirthdayNotification(dueBirthday.birthday),
       )
 
       await markDeliveryAttempt({
-        userId: dueBirthday.userId,
-        birthdayId: dueBirthday.birthdayId,
+        userId: dueBirthday.birthday.userId,
+        birthdayId: dueBirthday.birthday.id,
         occurrenceDate,
         status: DeliveryStatus.sent,
         telegramMessageId: String(message.message_id),
@@ -194,8 +258,8 @@ export async function runScheduler(): Promise<void> {
       const errorMessage = error instanceof Error ? error.message : 'Unknown scheduler error'
 
       await markDeliveryAttempt({
-        userId: dueBirthday.userId,
-        birthdayId: dueBirthday.birthdayId,
+        userId: dueBirthday.birthday.userId,
+        birthdayId: dueBirthday.birthday.id,
         occurrenceDate,
         status: DeliveryStatus.failed,
         errorMessage,

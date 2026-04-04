@@ -12,6 +12,7 @@ export function formatHelpMessage(): string {
     '/rename <name> | <new name> — обновить имя',
     '/setdate <name> | <DD.MM or DD.MM.YYYY> — обновить дату',
     '/delete <name> — soft delete записи',
+    '/test_notification — проверить доставку уведомлений',
     '/ping — проверить, что бот жив',
     '/cancel — отменить текущий wizard',
     '',
