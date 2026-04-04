@@ -114,7 +114,8 @@ bot.command('upcoming', async (ctx) => {
   }
 
   const user = await upsertUserFromContext(ctx)
-  await ctx.reply(await getUpcomingBirthdaysMessage(user.id))
+  const result = await getUpcomingBirthdaysMessage(user.id)
+  await ctx.reply(result.text, { reply_markup: result.replyMarkup })
 })
 
 bot.command('search', async (ctx) => {
@@ -316,6 +317,7 @@ bot.on('message:text', async (ctx, next) => {
 
   if (hasInlineEditSession(ctx)) {
     await ctx.reply(await handleInlineEditText(ctx, user.id, text))
+    await sendMainMenu(ctx)
     return
   }
 

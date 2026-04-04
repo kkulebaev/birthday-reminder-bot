@@ -3,6 +3,13 @@ import { formatHelpMessage } from './help.js'
 import { getBirthdayListMessage } from './list-birthdays.js'
 import { getUpcomingBirthdaysMessage } from './upcoming-birthdays.js'
 
+export function withMainMenuKeyboard(text: string): { text: string; replyMarkup: InlineKeyboard } {
+  return {
+    text,
+    replyMarkup: getMainMenuKeyboard(),
+  }
+}
+
 export function getMainMenuKeyboard(): InlineKeyboard {
   return new InlineKeyboard()
     .text('➕ Добавить', 'menu:add')
@@ -41,14 +48,16 @@ export async function handleMainMenuCallback(ctx: Context, userId: string, data:
   }
 
   if (data === 'menu:upcoming') {
-    const text = await getUpcomingBirthdaysMessage(userId)
+    const result = await getUpcomingBirthdaysMessage(userId)
 
     if (ctx.chat?.id && ctx.callbackQuery?.message?.message_id) {
-      await ctx.api.editMessageText(ctx.chat.id, ctx.callbackQuery.message.message_id, text, {
-        reply_markup: getMainMenuKeyboard(),
+      await ctx.api.editMessageText(ctx.chat.id, ctx.callbackQuery.message.message_id, result.text, {
+        reply_markup: result.replyMarkup,
       })
     } else {
-      await ctx.reply(text)
+      await ctx.reply(result.text, {
+        reply_markup: result.replyMarkup,
+      })
     }
 
     await ctx.answerCallbackQuery()

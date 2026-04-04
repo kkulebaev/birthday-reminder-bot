@@ -1,4 +1,6 @@
+import { InlineKeyboard } from 'grammy'
 import { prisma } from './db.js'
+import { getMainMenuKeyboard } from './main-menu.js'
 
 const UPCOMING_LIMIT = 5
 const DAY_IN_MS = 24 * 60 * 60 * 1000
@@ -43,7 +45,7 @@ function formatUpcomingLine(index: number, birthday: UpcomingBirthday, fromDate:
   return `${index}. ${formatDate(birthday.nextOccurrence)} — ${birthday.fullName} (${suffix})`
 }
 
-export async function getUpcomingBirthdaysMessage(userId: string): Promise<string> {
+export async function getUpcomingBirthdaysMessage(userId: string): Promise<{ text: string; replyMarkup: InlineKeyboard }> {
   const fromDate = getStartOfUtcDay(new Date())
   const birthdays = await prisma.birthday.findMany({
     where: {
@@ -58,11 +60,14 @@ export async function getUpcomingBirthdaysMessage(userId: string): Promise<strin
   })
 
   if (birthdays.length === 0) {
-    return [
-      'Пока тут пусто.',
-      '',
-      'Добавь первую запись командой /add 🎂',
-    ].join('\n')
+    return {
+      text: [
+        'Пока тут пусто.',
+        '',
+        'Добавь первую запись командой /add 🎂',
+      ].join('\n'),
+      replyMarkup: getMainMenuKeyboard(),
+    }
   }
 
   const upcoming = birthdays
@@ -75,9 +80,12 @@ export async function getUpcomingBirthdaysMessage(userId: string): Promise<strin
     .sort((left, right) => left.nextOccurrence.getTime() - right.nextOccurrence.getTime())
     .slice(0, UPCOMING_LIMIT)
 
-  return [
-    'Ближайшие дни рождения:',
-    '',
-    ...upcoming.map((birthday, index) => formatUpcomingLine(index + 1, birthday, fromDate)),
-  ].join('\n')
+  return {
+    text: [
+      'Ближайшие дни рождения:',
+      '',
+      ...upcoming.map((birthday, index) => formatUpcomingLine(index + 1, birthday, fromDate)),
+    ].join('\n'),
+    replyMarkup: getMainMenuKeyboard(),
+  }
 }

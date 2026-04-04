@@ -1,6 +1,7 @@
 import { InlineKeyboard } from 'grammy'
 import { prisma } from './db.js'
 import { BIRTHDAY_PAGE_SIZE, formatBirthdayLine } from './birthday-format.js'
+import { getMainMenuKeyboard } from './main-menu.js'
 
 function createBirthdayListKeyboard(idsAndNames: Array<{ id: string; fullName: string }>): InlineKeyboard {
   const keyboard = new InlineKeyboard()
@@ -31,6 +32,7 @@ export async function getBirthdayListMessage(userId: string): Promise<{ text: st
         '',
         'Добавь первую запись командой /add 🎂',
       ].join('\n'),
+      replyMarkup: getMainMenuKeyboard(),
     }
   }
 
