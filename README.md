@@ -9,6 +9,7 @@ Working beta foundation:
 - grammY bot bootstrap
 - Prisma schema and Postgres migration
 - CRUD-style Telegram commands for birthday records
+- Webhook-based Telegram delivery
 - Scheduler entrypoint for birthday notifications
 - Delivery logging via `delivery_logs`
 - Test notification command
@@ -35,6 +36,7 @@ Working beta foundation:
 - TypeScript
 - Node.js
 - grammY
+- Express
 - Prisma
 - Postgres
 
@@ -49,6 +51,11 @@ Working beta foundation:
 
 See `.env.example`.
 
+Webhook-related variables:
+- `APP_BASE_URL` — public HTTPS base URL, for example `https://your-app.up.railway.app`
+- `TELEGRAM_WEBHOOK_PATH` — optional, defaults to `/telegram/webhook`
+- `PORT` — server port, provided by the platform
+
 ## Scripts
 
 - `npm run dev`
@@ -61,6 +68,13 @@ See `.env.example`.
 - `npm run prisma:migrate:dev`
 - `npm run prisma:migrate:deploy`
 
+## Webhook notes
+
+The bot now runs in webhook mode:
+- app exposes a POST endpoint for Telegram updates
+- startup can register the webhook automatically when `APP_BASE_URL` is set
+- scheduler remains a separate process/command
+
 ## Scheduler notes
 
 Current scheduler behavior:
@@ -69,5 +83,3 @@ Current scheduler behavior:
 - sends notifications through the same Telegram bot
 - writes delivery status into `delivery_logs`
 - prevents duplicate successful sends for the same birthday and occurrence date
-
-Further improvements can still include retry strategy and deployment wiring for periodic execution.
