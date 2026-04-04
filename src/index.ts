@@ -6,6 +6,11 @@ import {
   handleAddBirthdayText,
   isAddBirthdayFlowActive,
 } from './add-birthday.js'
+import {
+  getBirthdayDetailMessage,
+  toggleBirthdayReminder,
+  updateBirthdayNote,
+} from './birthday-detail.js'
 import { formatStartMessage } from './format.js'
 import { formatHelpMessage } from './help.js'
 import { getBirthdayListMessage } from './list-birthdays.js'
@@ -76,6 +81,42 @@ bot.command('search', async (ctx) => {
   const query = String(ctx.match).trim()
 
   await ctx.reply(await getBirthdaySearchMessage(user.id, query))
+})
+
+bot.command('view', async (ctx) => {
+  if (!isPrivateChat(ctx)) {
+    return
+  }
+
+  const user = await upsertUserFromContext(ctx)
+  const query = String(ctx.match).trim()
+
+  await ctx.reply(await getBirthdayDetailMessage(user.id, query))
+})
+
+bot.command('note', async (ctx) => {
+  if (!isPrivateChat(ctx)) {
+    return
+  }
+
+  const user = await upsertUserFromContext(ctx)
+  const rawInput = String(ctx.match).trim()
+  const [queryPart, ...noteParts] = rawInput.split('|')
+  const query = queryPart?.trim() ?? ''
+  const note = noteParts.join('|').trim()
+
+  await ctx.reply(await updateBirthdayNote(user.id, query, note))
+})
+
+bot.command('toggle', async (ctx) => {
+  if (!isPrivateChat(ctx)) {
+    return
+  }
+
+  const user = await upsertUserFromContext(ctx)
+  const query = String(ctx.match).trim()
+
+  await ctx.reply(await toggleBirthdayReminder(user.id, query))
 })
 
 bot.command('cancel', async (ctx) => {
