@@ -1,4 +1,5 @@
 import { InlineKeyboard, type Context } from 'grammy'
+import { beginInlineEdit } from './birthday-inline-edit.js'
 import { prisma } from './db.js'
 import { getBirthdayListMessage, getListBackKeyboard } from './list-birthdays.js'
 
@@ -35,6 +36,10 @@ function getDetailKeyboard(recordId: string): InlineKeyboard {
     .text('🔔 Toggle', `birthday:toggle:${recordId}`)
     .text('🗑 Delete', `birthday:delete:${recordId}`)
     .row()
+    .text('📝 Note', `birthday:edit-note:${recordId}`)
+    .text('✏️ Rename', `birthday:edit-rename:${recordId}`)
+    .row()
+    .text('📅 Date', `birthday:edit-date:${recordId}`)
     .text('⬅️ Назад к списку', 'birthday:list')
 }
 
@@ -63,7 +68,12 @@ async function editCallbackMessage(ctx: Context, text: string, replyMarkup?: Inl
   const messageId = ctx.callbackQuery?.message?.message_id
 
   if (!chatId || !messageId) {
-    await ctx.reply(text, replyMarkup ? { reply_markup: replyMarkup } : undefined)
+    if (replyMarkup) {
+      await ctx.reply(text, { reply_markup: replyMarkup })
+      return
+    }
+
+    await ctx.reply(text)
     return
   }
 
@@ -147,6 +157,24 @@ export async function handleBirthdayCallback(ctx: Context, userId: string, data:
 
     await editCallbackMessage(ctx, `Удалил запись: ${record.fullName}`, getListBackKeyboard())
     await ctx.answerCallbackQuery({ text: 'Запись удалена' })
+    return true
+  }
+
+  if (action === 'edit-note') {
+    await ctx.answerCallbackQuery({ text: 'Жду новую заметку' })
+    await ctx.reply(beginInlineEdit(ctx, record.id, 'note'))
+    return true
+  }
+
+  if (action === 'edit-rename') {
+    await ctx.answerCallbackQuery({ text: 'Жду новое имя' })
+    await ctx.reply(beginInlineEdit(ctx, record.id, 'rename'))
+    return true
+  }
+
+  if (action === 'edit-date') {
+    await ctx.answerCallbackQuery({ text: 'Жду новую дату' })
+    await ctx.reply(beginInlineEdit(ctx, record.id, 'setdate'))
     return true
   }
 

@@ -15,6 +15,7 @@ import {
   updateBirthdayNote,
 } from './birthday-detail.js'
 import { handleBirthdayCallback, sendBirthdayDetail } from './birthday-callbacks.js'
+import { cancelInlineEdit, handleInlineEditText, hasInlineEditSession } from './birthday-inline-edit.js'
 import { formatStartMessage } from './format.js'
 import { formatHelpMessage } from './help.js'
 import { getBirthdayListMessage } from './list-birthdays.js'
@@ -201,9 +202,15 @@ bot.command('cancel', async (ctx) => {
     return
   }
 
-  const wasCancelled = cancelAddBirthdayFlow(ctx)
+  const inlineCancelled = cancelInlineEdit(ctx)
+  const wizardCancelled = cancelAddBirthdayFlow(ctx)
 
-  await ctx.reply(wasCancelled ? 'Ок, отменил текущий wizard.' : 'Сейчас нечего отменять.')
+  if (inlineCancelled || wizardCancelled) {
+    await ctx.reply('Ок, отменил текущее действие.')
+    return
+  }
+
+  await ctx.reply('Сейчас нечего отменять.')
 })
 
 bot.on('callback_query:data', async (ctx) => {
@@ -237,6 +244,13 @@ bot.on('message:text', async (ctx, next) => {
 
   if (text.startsWith('/')) {
     await next()
+    return
+  }
+
+  const user = await upsertUserFromContext(ctx)
+
+  if (hasInlineEditSession(ctx)) {
+    await ctx.reply(await handleInlineEditText(ctx, user.id, text))
     return
   }
 
