@@ -8,6 +8,7 @@ import {
 } from './add-birthday.js'
 import { formatStartMessage } from './format.js'
 import { formatHelpMessage } from './help.js'
+import { getBirthdayListMessage } from './list-birthdays.js'
 import { isPrivateChat, upsertUserFromContext } from './user.js'
 
 const token = process.env.TELEGRAM_BOT_TOKEN
@@ -54,6 +55,15 @@ bot.command('add', async (ctx) => {
 
   await upsertUserFromContext(ctx)
   await ctx.reply(beginAddBirthdayFlow(ctx))
+})
+
+bot.command('list', async (ctx) => {
+  if (!isPrivateChat(ctx)) {
+    return
+  }
+
+  const user = await upsertUserFromContext(ctx)
+  await ctx.reply(await getBirthdayListMessage(user.id))
 })
 
 bot.command('cancel', async (ctx) => {
