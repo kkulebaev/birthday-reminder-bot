@@ -44,7 +44,7 @@ async function findBirthdays(userId: string, query: string): Promise<Birthday[]>
 function getSingleBirthdayOrMessage(
   birthdays: Birthday[],
   query: string,
-  action: 'view' | 'note' | 'toggle',
+  action: 'view' | 'note' | 'toggle' | 'delete' | 'rename' | 'setdate',
 ): { birthday: Birthday } | { message: string } {
   if (birthdays.length === 0) {
     return {
@@ -60,7 +60,7 @@ function getSingleBirthdayOrMessage(
           '',
           ...birthdays.map((birthday, index) => `${index + 1}. ${birthday.fullName}`),
           '',
-          'Уточни запрос для /view, /note или /toggle.',
+          'Уточни запрос для /view, /note, /toggle, /delete, /rename или /setdate.',
         ].join('\n'),
       }
     }
@@ -79,6 +79,54 @@ function getSingleBirthdayOrMessage(
   }
 
   return { birthday }
+}
+
+function parseInteger(value: string): number | null {
+  if (!/^\d+$/.test(value)) {
+    return null
+  }
+
+  return Number(value)
+}
+
+function parseDateInput(value: string): { day: number; month: number; birthYear: number | null } | null {
+  const parts = value.trim().split('.')
+
+  if (parts.length < 2 || parts.length > 3) {
+    return null
+  }
+
+  const [dayPart, monthPart, yearPart] = parts
+  const day = parseInteger(dayPart ?? '')
+  const month = parseInteger(monthPart ?? '')
+
+  if (day === null || month === null) {
+    return null
+  }
+
+  if (day < 1 || day > 31 || month < 1 || month > 12) {
+    return null
+  }
+
+  if (!yearPart) {
+    return {
+      day,
+      month,
+      birthYear: null,
+    }
+  }
+
+  const birthYear = parseInteger(yearPart)
+
+  if (birthYear === null || birthYear < 1900 || birthYear > 2100) {
+    return null
+  }
+
+  return {
+    day,
+    month,
+    birthYear,
+  }
 }
 
 export async function getBirthdayDetailMessage(userId: string, query: string): Promise<string> {
@@ -153,6 +201,101 @@ export async function toggleBirthdayReminder(userId: string, query: string): Pro
 
   return [
     'Статус напоминаний обновил.',
+    '',
+    formatBirthdayDetail(birthday),
+  ].join('\n')
+}
+
+export async function softDeleteBirthday(userId: string, query: string): Promise<string> {
+  const normalizedQuery = query.trim()
+
+  if (!normalizedQuery) {
+    return 'Напиши так: /delete часть имени'
+  }
+
+  const birthdays = await findBirthdays(userId, normalizedQuery)
+  const result = getSingleBirthdayOrMessage(birthdays, normalizedQuery, 'delete')
+
+  if ('message' in result) {
+    return result.message
+  }
+
+  const birthday = await prisma.birthday.update({
+    where: {
+      id: result.birthday.id,
+    },
+    data: {
+      deletedAt: new Date(),
+    },
+  })
+
+  return `Удалил запись: ${birthday.fullName}`
+}
+
+export async function renameBirthday(userId: string, query: string, fullName: string): Promise<string> {
+  const normalizedQuery = query.trim()
+  const normalizedFullName = fullName.trim()
+
+  if (!normalizedQuery || !normalizedFullName) {
+    return 'Напиши так: /rename часть имени | новое имя'
+  }
+
+  const birthdays = await findBirthdays(userId, normalizedQuery)
+  const result = getSingleBirthdayOrMessage(birthdays, normalizedQuery, 'rename')
+
+  if ('message' in result) {
+    return result.message
+  }
+
+  const birthday = await prisma.birthday.update({
+    where: {
+      id: result.birthday.id,
+    },
+    data: {
+      fullName: normalizedFullName,
+    },
+  })
+
+  return [
+    'Имя обновил.',
+    '',
+    formatBirthdayDetail(birthday),
+  ].join('\n')
+}
+
+export async function setBirthdayDate(userId: string, query: string, dateInput: string): Promise<string> {
+  const normalizedQuery = query.trim()
+
+  if (!normalizedQuery || !dateInput.trim()) {
+    return 'Напиши так: /setdate часть имени | DD.MM или DD.MM.YYYY'
+  }
+
+  const parsedDate = parseDateInput(dateInput)
+
+  if (!parsedDate) {
+    return 'Дата должна быть в формате DD.MM или DD.MM.YYYY'
+  }
+
+  const birthdays = await findBirthdays(userId, normalizedQuery)
+  const result = getSingleBirthdayOrMessage(birthdays, normalizedQuery, 'setdate')
+
+  if ('message' in result) {
+    return result.message
+  }
+
+  const birthday = await prisma.birthday.update({
+    where: {
+      id: result.birthday.id,
+    },
+    data: {
+      day: parsedDate.day,
+      month: parsedDate.month,
+      birthYear: parsedDate.birthYear,
+    },
+  })
+
+  return [
+    'Дату обновил.',
     '',
     formatBirthdayDetail(birthday),
   ].join('\n')

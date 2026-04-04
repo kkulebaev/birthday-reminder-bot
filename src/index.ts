@@ -8,6 +8,9 @@ import {
 } from './add-birthday.js'
 import {
   getBirthdayDetailMessage,
+  renameBirthday,
+  setBirthdayDate,
+  softDeleteBirthday,
   toggleBirthdayReminder,
   updateBirthdayNote,
 } from './birthday-detail.js'
@@ -117,6 +120,45 @@ bot.command('toggle', async (ctx) => {
   const query = String(ctx.match).trim()
 
   await ctx.reply(await toggleBirthdayReminder(user.id, query))
+})
+
+bot.command('rename', async (ctx) => {
+  if (!isPrivateChat(ctx)) {
+    return
+  }
+
+  const user = await upsertUserFromContext(ctx)
+  const rawInput = String(ctx.match).trim()
+  const [queryPart, ...nameParts] = rawInput.split('|')
+  const query = queryPart?.trim() ?? ''
+  const fullName = nameParts.join('|').trim()
+
+  await ctx.reply(await renameBirthday(user.id, query, fullName))
+})
+
+bot.command('setdate', async (ctx) => {
+  if (!isPrivateChat(ctx)) {
+    return
+  }
+
+  const user = await upsertUserFromContext(ctx)
+  const rawInput = String(ctx.match).trim()
+  const [queryPart, ...dateParts] = rawInput.split('|')
+  const query = queryPart?.trim() ?? ''
+  const dateInput = dateParts.join('|').trim()
+
+  await ctx.reply(await setBirthdayDate(user.id, query, dateInput))
+})
+
+bot.command('delete', async (ctx) => {
+  if (!isPrivateChat(ctx)) {
+    return
+  }
+
+  const user = await upsertUserFromContext(ctx)
+  const query = String(ctx.match).trim()
+
+  await ctx.reply(await softDeleteBirthday(user.id, query))
 })
 
 bot.command('cancel', async (ctx) => {
