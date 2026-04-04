@@ -16,6 +16,10 @@ export function formatStartMessage(input: StartMessageInput): string {
     `• timezone: ${input.timezone}`,
     `• notify_at: ${input.notifyAt}`,
     '',
-    'Скоро здесь появятся команды для добавления, поиска и списка дней рождения.',
+    'Основные команды:',
+    '/add — добавить день рождения',
+    '/list — открыть список',
+    '/upcoming — посмотреть ближайшие дни рождения',
+    '/help — показать все команды',
   ].join('\n')
 }
