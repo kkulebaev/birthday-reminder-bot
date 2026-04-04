@@ -17,9 +17,9 @@ export function formatStartMessage(input: StartMessageInput): string {
     `• Время уведомления: ${input.notifyAt}`,
     '',
     'С чего начать:',
+    '/menu — открыть главное меню',
     '/add — добавить день рождения',
     '/list — открыть список',
     '/upcoming — посмотреть ближайшие дни рождения',
-    '/help — показать все команды',
   ].join('\n')
 }

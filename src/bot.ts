@@ -73,6 +73,14 @@ bot.command('start', async (ctx) => {
   await sendMainMenu(ctx)
 })
 
+bot.command('menu', async (ctx) => {
+  if (!isPrivateChat(ctx)) {
+    return
+  }
+
+  await sendMainMenu(ctx)
+})
+
 bot.command('help', async (ctx) => {
   if (!isPrivateChat(ctx)) {
     return

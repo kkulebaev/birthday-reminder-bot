@@ -1,14 +1,8 @@
 import { InlineKeyboard, type Context } from 'grammy'
+import { beginAddBirthdayFlow } from './add-birthday.js'
 import { formatHelpMessage } from './help.js'
 import { getBirthdayListMessage } from './list-birthdays.js'
 import { getUpcomingBirthdaysMessage } from './upcoming-birthdays.js'
-
-export function withMainMenuKeyboard(text: string): { text: string; replyMarkup: InlineKeyboard } {
-  return {
-    text,
-    replyMarkup: getMainMenuKeyboard(),
-  }
-}
 
 export function getMainMenuKeyboard(): InlineKeyboard {
   return new InlineKeyboard()
@@ -27,7 +21,7 @@ export async function sendMainMenu(ctx: Context): Promise<void> {
 
 export async function handleMainMenuCallback(ctx: Context, userId: string, data: string): Promise<boolean> {
   if (data === 'menu:add') {
-    await ctx.reply('Используй /add, чтобы начать добавление дня рождения.')
+    await ctx.reply(beginAddBirthdayFlow(ctx))
     await ctx.answerCallbackQuery()
     return true
   }
@@ -40,7 +34,9 @@ export async function handleMainMenuCallback(ctx: Context, userId: string, data:
         reply_markup: result.replyMarkup,
       })
     } else {
-      await ctx.reply(result.text)
+      await ctx.reply(result.text, result.replyMarkup ? {
+        reply_markup: result.replyMarkup,
+      } : undefined)
     }
 
     await ctx.answerCallbackQuery()
@@ -70,7 +66,9 @@ export async function handleMainMenuCallback(ctx: Context, userId: string, data:
         reply_markup: getMainMenuKeyboard(),
       })
     } else {
-      await ctx.reply(formatHelpMessage())
+      await ctx.reply(formatHelpMessage(), {
+        reply_markup: getMainMenuKeyboard(),
+      })
     }
 
     await ctx.answerCallbackQuery()
