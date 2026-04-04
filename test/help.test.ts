@@ -6,14 +6,14 @@ describe('formatHelpMessage', () => {
     const result = formatHelpMessage()
 
     expect(result).toContain('/menu — открыть главное меню')
-    expect(result).toContain('/add — начать добавление дня рождения')
-    expect(result).toContain('/upcoming — показать ближайшие дни рождения')
+    expect(result).toContain('/add — добавить день рождения')
+    expect(result).toContain('/upcoming — посмотреть ближайшие дни рождения')
     expect(result).toContain('/cancel — отменить текущее действие')
   })
 
-  it('includes wizard hint', () => {
+  it('includes updated wizard hint', () => {
     const result = formatHelpMessage()
 
-    expect(result).toContain('Подсказка: в wizard можно нажимать «Пропустить», а месяц выбирать кнопками.')
+    expect(result).toContain('Подсказка: большинство действий можно делать через кнопки, а в wizard месяц выбирается кнопками.')
   })
 })

@@ -3,8 +3,10 @@ import { Bot, type Context } from 'grammy'
 import {
   beginAddBirthdayFlow,
   cancelAddBirthdayFlow,
+  canConfirmAddBirthday,
   canPickAddBirthdayMonth,
   canSkipAddBirthdayStep,
+  confirmAddBirthdayFlow,
   getAddBirthdayOptionalKeyboard,
   handleAddBirthdayText,
   isAddBirthdayFlowActive,
@@ -26,7 +28,7 @@ import { formatHelpMessage } from './help.js'
 import { getBirthdayListMessage } from './list-birthdays.js'
 import { sendMainMenu, handleMainMenuCallback } from './main-menu.js'
 import { notificationBot } from './notification-bot.js'
-import { getBirthdaySearchMessage } from './search-birthdays.js'
+import { getBirthdaySearchResult } from './search-birthdays.js'
 import { sendTestNotification } from './test-notification.js'
 import { getUpcomingBirthdaysMessage } from './upcoming-birthdays.js'
 import { isPrivateChat, upsertUserFromContext } from './user.js'
@@ -133,16 +135,16 @@ bot.command('search', async (ctx) => {
 
   const user = await upsertUserFromContext(ctx)
   const query = String(ctx.match).trim()
-  const result = await getBirthdaySearchMessage(user.id, query)
+  const result = await getBirthdaySearchResult(user.id, query)
 
-  if (result.replyMarkup) {
-    await ctx.reply(result.text, {
-      reply_markup: result.replyMarkup,
-    })
+  if (result.kind === 'single') {
+    await sendBirthdayDetail(ctx, user.id, result.birthdayId)
     return
   }
 
-  await ctx.reply(result.text)
+  await ctx.reply(result.text, {
+    reply_markup: result.replyMarkup,
+  })
 })
 
 bot.command('view', async (ctx) => {
@@ -269,11 +271,26 @@ bot.on('callback_query:data', async (ctx) => {
     await ctx.answerCallbackQuery({ text: 'Пропускаю' })
     const resultText = await skipAddBirthdayStep(ctx)
     await replyWithOptionalKeyboard(ctx, resultText)
+    return
+  }
 
-    if (!isAddBirthdayFlowActive(ctx)) {
-      await sendMainMenu(ctx)
+  if (data === 'birthday:add:confirm') {
+    if (!canConfirmAddBirthday(ctx)) {
+      await ctx.answerCallbackQuery({ text: 'Сейчас нечего сохранять' })
+      return
     }
 
+    await ctx.answerCallbackQuery({ text: 'Сохраняю' })
+    await ctx.reply(await confirmAddBirthdayFlow(ctx))
+    await sendMainMenu(ctx)
+    return
+  }
+
+  if (data === 'birthday:add:cancel') {
+    await ctx.answerCallbackQuery({ text: 'Отменено' })
+    cancelAddBirthdayFlow(ctx)
+    await ctx.reply('Ок, не сохраняю эту запись.')
+    await sendMainMenu(ctx)
     return
   }
 

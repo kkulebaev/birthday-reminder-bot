@@ -8,9 +8,10 @@ type AddBirthdayDraft = {
   day?: number
   month?: number
   birthYear?: number | null
+  notes?: string | null
 }
 
-type AddBirthdayStep = 'fullName' | 'day' | 'month' | 'birthYear' | 'notes'
+type AddBirthdayStep = 'fullName' | 'day' | 'month' | 'birthYear' | 'notes' | 'confirm'
 
 type AddBirthdaySession = {
   step: AddBirthdayStep
@@ -81,6 +82,21 @@ function formatBirthdayCreatedMessage(birthday: Birthday): string {
   return `Сохранил: ${birthday.fullName}\nДата: ${day}.${month}${year}${notes}`
 }
 
+function formatDraftSummary(draft: AddBirthdayDraft): string {
+  const day = draft.day ? String(draft.day).padStart(2, '0') : '—'
+  const month = draft.month ? String(draft.month).padStart(2, '0') : '—'
+  const year = draft.birthYear ? `.${draft.birthYear}` : ''
+  const notes = draft.notes ? draft.notes : '—'
+
+  return [
+    'Проверь перед сохранением:',
+    '',
+    `Имя: ${draft.fullName ?? '—'}`,
+    `Дата: ${day}.${month}${year}`,
+    `Заметка: ${notes}`,
+  ].join('\n')
+}
+
 function getMonthKeyboard(): InlineKeyboard {
   const keyboard = new InlineKeyboard()
 
@@ -93,6 +109,12 @@ function getMonthKeyboard(): InlineKeyboard {
   })
 
   return keyboard
+}
+
+function getConfirmKeyboard(): InlineKeyboard {
+  return new InlineKeyboard()
+    .text('✅ Сохранить', 'birthday:add:confirm')
+    .text('❌ Отмена', 'birthday:add:cancel')
 }
 
 export function beginAddBirthdayFlow(ctx: Context): string {
@@ -132,6 +154,10 @@ export function getAddBirthdayOptionalKeyboard(ctx: Context): InlineKeyboard | n
     return new InlineKeyboard().text('Пропустить', 'birthday:add:skip')
   }
 
+  if (session.step === 'confirm') {
+    return getConfirmKeyboard()
+  }
+
   return null
 }
 
@@ -145,6 +171,21 @@ export function canPickAddBirthdayMonth(ctx: Context): boolean {
   const session = getSession(ctx)
 
   return session?.step === 'month'
+}
+
+export function canConfirmAddBirthday(ctx: Context): boolean {
+  const session = getSession(ctx)
+
+  return session?.step === 'confirm'
+}
+
+function moveToConfirm(ctx: Context, draft: AddBirthdayDraft): string {
+  setSession(ctx, {
+    step: 'confirm',
+    draft,
+  })
+
+  return formatDraftSummary(draft)
 }
 
 export async function skipAddBirthdayStep(ctx: Context): Promise<string> {
@@ -167,7 +208,10 @@ export async function skipAddBirthdayStep(ctx: Context): Promise<string> {
   }
 
   if (session.step === 'notes') {
-    return finishAddBirthdayFlow(ctx, null)
+    return moveToConfirm(ctx, {
+      ...session.draft,
+      notes: null,
+    })
   }
 
   return 'Сейчас этот шаг нельзя пропустить.'
@@ -195,7 +239,7 @@ export function selectAddBirthdayMonth(ctx: Context, month: number): string {
   return 'Шаг 4 из 5: отправь год рождения числом или нажми «Пропустить». '
 }
 
-async function finishAddBirthdayFlow(ctx: Context, notes: string | null): Promise<string> {
+async function finishAddBirthdayFlow(ctx: Context): Promise<string> {
   const session = getSession(ctx)
 
   if (!session) {
@@ -217,13 +261,23 @@ async function finishAddBirthdayFlow(ctx: Context, notes: string | null): Promis
       day: draft.day,
       month: draft.month,
       birthYear: draft.birthYear ?? null,
-      notes,
+      notes: draft.notes ?? null,
     },
   })
 
   clearSession(ctx)
 
   return formatBirthdayCreatedMessage(birthday)
+}
+
+export async function confirmAddBirthdayFlow(ctx: Context): Promise<string> {
+  const session = getSession(ctx)
+
+  if (!session || session.step !== 'confirm') {
+    return 'Сейчас нечего сохранять.'
+  }
+
+  return finishAddBirthdayFlow(ctx)
 }
 
 export async function handleAddBirthdayText(ctx: Context, text: string): Promise<{ text: string; completed: boolean }> {
@@ -339,20 +393,29 @@ export async function handleAddBirthdayText(ctx: Context, text: string): Promise
     }
   }
 
+  if (session.step === 'confirm') {
+    return {
+      text: 'Проверь данные и нажми «Сохранить» или «Отмена».',
+      completed: false,
+    }
+  }
+
   if (isSkipValue(text)) {
     const resultText = await skipAddBirthdayStep(ctx)
 
     return {
       text: resultText,
-      completed: !isAddBirthdayFlowActive(ctx),
+      completed: false,
     }
   }
 
   const notes = text.trim() || null
-  const resultText = await finishAddBirthdayFlow(ctx, notes)
 
   return {
-    text: resultText,
-    completed: true,
+    text: moveToConfirm(ctx, {
+      ...session.draft,
+      notes,
+    }),
+    completed: false,
   }
 }

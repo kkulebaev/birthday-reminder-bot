@@ -81,7 +81,7 @@ function formatBirthdayDetail(input: {
   const yearText = input.birthYear ? `.${input.birthYear}` : ''
 
   return [
-    `Full Name: ${input.fullName}`,
+    `🎂 ${input.fullName}`,
     `Дата: ${dayText}.${monthText}${yearText}`,
     `Напоминания: ${input.isReminderEnabled ? 'включены' : 'выключены'}`,
     `Заметка: ${input.notes ?? '—'}`,
@@ -96,7 +96,7 @@ export function beginInlineEdit(ctx: Context, birthdayId: string, mode: InlineEd
   }
 
   if (mode === 'rename') {
-    return 'Отправь новое Full Name одним сообщением.'
+    return 'Отправь новое имя одним сообщением.'
   }
 
   return 'Отправь новую дату в формате DD.MM или DD.MM.YYYY.'
@@ -114,7 +114,7 @@ export async function handleInlineEditText(ctx: Context, userId: string, text: s
   const session = sessions.get(getUserKey(ctx))
 
   if (!session) {
-    return 'Inline edit не активен.'
+    return 'Сейчас нечего редактировать.'
   }
 
   const birthday = await prisma.birthday.findFirst({
@@ -137,7 +137,7 @@ export async function handleInlineEditText(ctx: Context, userId: string, text: s
     })
 
     sessions.delete(getUserKey(ctx))
-    return ['Заметку обновил.', '', formatBirthdayDetail(updated)].join('\n')
+    return ['Готово, заметку обновил.', '', formatBirthdayDetail(updated)].join('\n')
   }
 
   if (session.mode === 'rename') {
@@ -153,7 +153,7 @@ export async function handleInlineEditText(ctx: Context, userId: string, text: s
     })
 
     sessions.delete(getUserKey(ctx))
-    return ['Имя обновил.', '', formatBirthdayDetail(updated)].join('\n')
+    return ['Готово, имя обновил.', '', formatBirthdayDetail(updated)].join('\n')
   }
 
   const parsedDate = parseDateInput(text)
@@ -172,5 +172,5 @@ export async function handleInlineEditText(ctx: Context, userId: string, text: s
   })
 
   sessions.delete(getUserKey(ctx))
-  return ['Дату обновил.', '', formatBirthdayDetail(updated)].join('\n')
+  return ['Готово, дату обновил.', '', formatBirthdayDetail(updated)].join('\n')
 }

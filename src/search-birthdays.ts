@@ -25,11 +25,17 @@ export function formatBirthdaySearchMessage(query: string, lines: string[]): str
   ].join('\n')
 }
 
-export async function getBirthdaySearchMessage(userId: string, query: string): Promise<{ text: string; replyMarkup?: InlineKeyboard }> {
+export type BirthdaySearchResult =
+  | { kind: 'empty'; text: string; replyMarkup: InlineKeyboard }
+  | { kind: 'single'; birthdayId: string }
+  | { kind: 'multiple'; text: string; replyMarkup: InlineKeyboard }
+
+export async function getBirthdaySearchResult(userId: string, query: string): Promise<BirthdaySearchResult> {
   const normalizedQuery = query.trim()
 
   if (!normalizedQuery) {
     return {
+      kind: 'empty',
       text: 'Напиши так: /search часть имени',
       replyMarkup: getMainMenuKeyboard(),
     }
@@ -52,15 +58,49 @@ export async function getBirthdaySearchMessage(userId: string, query: string): P
 
   if (birthdays.length === 0) {
     return {
+      kind: 'empty',
       text: `Ничего не нашёл по запросу: ${normalizedQuery}`,
       replyMarkup: getMainMenuKeyboard(),
+    }
+  }
+
+  if (birthdays.length === 1) {
+    const [birthday] = birthdays
+
+    if (!birthday) {
+      return {
+        kind: 'empty',
+        text: `Ничего не нашёл по запросу: ${normalizedQuery}`,
+        replyMarkup: getMainMenuKeyboard(),
+      }
+    }
+
+    return {
+      kind: 'single',
+      birthdayId: birthday.id,
     }
   }
 
   const lines = birthdays.map((birthday, index) => formatBirthdayLine(index + 1, birthday))
 
   return {
+    kind: 'multiple',
     text: formatBirthdaySearchMessage(normalizedQuery, lines),
     replyMarkup: createBirthdaySearchKeyboard(birthdays.map((birthday) => ({ id: birthday.id, fullName: birthday.fullName }))),
+  }
+}
+
+export async function getBirthdaySearchMessage(userId: string, query: string): Promise<{ text: string; replyMarkup?: InlineKeyboard }> {
+  const result = await getBirthdaySearchResult(userId, query)
+
+  if (result.kind === 'single') {
+    return {
+      text: 'Открываю карточку...',
+    }
+  }
+
+  return {
+    text: result.text,
+    replyMarkup: result.replyMarkup,
   }
 }
