@@ -10,6 +10,8 @@ function createBirthdayListKeyboard(idsAndNames: Array<{ id: string; fullName: s
     keyboard.text(item.fullName, `birthday:view:${item.id}`).row()
   }
 
+  keyboard.text('🏠 Главное меню', 'menu:home')
+
   return keyboard
 }
 
@@ -51,5 +53,8 @@ export async function getBirthdayListMessage(userId: string): Promise<{ text: st
 }
 
 export function getListBackKeyboard(): InlineKeyboard {
-  return new InlineKeyboard().text('⬅️ К списку', 'birthday:list')
+  return new InlineKeyboard()
+    .text('⬅️ К списку', 'birthday:list')
+    .row()
+    .text('🏠 Главное меню', 'menu:home')
 }

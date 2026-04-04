@@ -13,6 +13,10 @@ export function getMainMenuKeyboard(): InlineKeyboard {
     .text('ℹ️ Помощь', 'menu:help')
 }
 
+export function getHomeButtonKeyboard(): InlineKeyboard {
+  return new InlineKeyboard().text('🏠 Главное меню', 'menu:home')
+}
+
 export async function sendMainMenu(ctx: Context): Promise<void> {
   await ctx.reply('Главное меню:', {
     reply_markup: getMainMenuKeyboard(),
@@ -20,6 +24,19 @@ export async function sendMainMenu(ctx: Context): Promise<void> {
 }
 
 export async function handleMainMenuCallback(ctx: Context, userId: string, data: string): Promise<boolean> {
+  if (data === 'menu:home') {
+    if (ctx.chat?.id && ctx.callbackQuery?.message?.message_id) {
+      await ctx.api.editMessageText(ctx.chat.id, ctx.callbackQuery.message.message_id, 'Главное меню:', {
+        reply_markup: getMainMenuKeyboard(),
+      })
+    } else {
+      await sendMainMenu(ctx)
+    }
+
+    await ctx.answerCallbackQuery()
+    return true
+  }
+
   if (data === 'menu:add') {
     await ctx.reply(beginAddBirthdayFlow(ctx))
     await ctx.answerCallbackQuery()

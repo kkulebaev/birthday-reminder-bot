@@ -41,6 +41,8 @@ function getDetailKeyboard(recordId: string): InlineKeyboard {
     .row()
     .text('📅 Дата', `birthday:edit-date:${recordId}`)
     .text('⬅️ К списку', 'birthday:list')
+    .row()
+    .text('🏠 Главное меню', 'menu:home')
 }
 
 async function getOwnedBirthday(userId: string, birthdayId: string): Promise<BirthdayRecord | null> {
