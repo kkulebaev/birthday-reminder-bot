@@ -9,6 +9,7 @@ import {
 import { formatStartMessage } from './format.js'
 import { formatHelpMessage } from './help.js'
 import { getBirthdayListMessage } from './list-birthdays.js'
+import { getBirthdaySearchMessage } from './search-birthdays.js'
 import { isPrivateChat, upsertUserFromContext } from './user.js'
 
 const token = process.env.TELEGRAM_BOT_TOKEN
@@ -64,6 +65,17 @@ bot.command('list', async (ctx) => {
 
   const user = await upsertUserFromContext(ctx)
   await ctx.reply(await getBirthdayListMessage(user.id))
+})
+
+bot.command('search', async (ctx) => {
+  if (!isPrivateChat(ctx)) {
+    return
+  }
+
+  const user = await upsertUserFromContext(ctx)
+  const query = String(ctx.match).trim()
+
+  await ctx.reply(await getBirthdaySearchMessage(user.id, query))
 })
 
 bot.command('cancel', async (ctx) => {

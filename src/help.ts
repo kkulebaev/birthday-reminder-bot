@@ -5,6 +5,7 @@ export function formatHelpMessage(): string {
     '/help — показать справку',
     '/add — начать добавление дня рождения',
     '/list — показать первые 10 записей',
+    '/search <name> — найти записи по имени',
     '/ping — проверить, что бот жив',
     '/cancel — отменить текущий wizard',
     '',
