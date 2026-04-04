@@ -1,10 +1,13 @@
 import 'dotenv/config'
-import { Bot } from 'grammy'
+import { Bot, type Context } from 'grammy'
 import {
   beginAddBirthdayFlow,
   cancelAddBirthdayFlow,
+  canSkipAddBirthdayStep,
+  getAddBirthdaySkipKeyboard,
   handleAddBirthdayText,
   isAddBirthdayFlowActive,
+  skipAddBirthdayStep,
 } from './add-birthday.js'
 import {
   getBirthdayDetailMessage,
@@ -32,6 +35,17 @@ if (!token) {
 }
 
 export const bot = new Bot(token)
+
+async function replyWithOptionalKeyboard(ctx: Context, text: string): Promise<void> {
+  const skipKeyboard = getAddBirthdaySkipKeyboard(ctx)
+
+  if (skipKeyboard) {
+    await ctx.reply(text, { reply_markup: skipKeyboard })
+    return
+  }
+
+  await ctx.reply(text)
+}
 
 bot.command('start', async (ctx) => {
   if (!isPrivateChat(ctx)) {
@@ -231,6 +245,17 @@ bot.on('callback_query:data', async (ctx) => {
   const user = await upsertUserFromContext(ctx)
   const data = ctx.callbackQuery.data
 
+  if (data === 'birthday:add:skip') {
+    if (!canSkipAddBirthdayStep(ctx)) {
+      await ctx.answerCallbackQuery({ text: 'Сейчас нечего пропускать' })
+      return
+    }
+
+    await ctx.answerCallbackQuery({ text: 'Пропускаю' })
+    await replyWithOptionalKeyboard(ctx, await skipAddBirthdayStep(ctx))
+    return
+  }
+
   if (data.startsWith('birthday:view:')) {
     const birthdayId = data.replace('birthday:view:', '')
     await sendBirthdayDetail(ctx, user.id, birthdayId)
@@ -269,7 +294,7 @@ bot.on('message:text', async (ctx, next) => {
     return
   }
 
-  await ctx.reply(await handleAddBirthdayText(ctx, text))
+  await replyWithOptionalKeyboard(ctx, await handleAddBirthdayText(ctx, text))
 })
 
 bot.command('ping', async (ctx) => {

@@ -1,5 +1,5 @@
 import type { Birthday } from '@prisma/client'
-import type { Context } from 'grammy'
+import { InlineKeyboard, type Context } from 'grammy'
 import { prisma } from './db.js'
 import { upsertUserFromContext } from './user.js'
 
@@ -61,6 +61,16 @@ function validateBirthYear(value: number): boolean {
   return value >= 1900 && value <= 2100
 }
 
+function isSkipValue(value: string): boolean {
+  const normalized = value.trim().toLowerCase()
+
+  return normalized === 'skip'
+    || normalized === 'пропустить'
+    || normalized === 'без года'
+    || normalized === 'без заметки'
+    || normalized === 'нет'
+}
+
 function formatBirthdayCreatedMessage(birthday: Birthday): string {
   const month = String(birthday.month).padStart(2, '0')
   const day = String(birthday.day).padStart(2, '0')
@@ -90,6 +100,83 @@ export function isAddBirthdayFlowActive(ctx: Context): boolean {
 
 export function cancelAddBirthdayFlow(ctx: Context): boolean {
   return clearSession(ctx)
+}
+
+export function getAddBirthdaySkipKeyboard(ctx: Context): InlineKeyboard | null {
+  const session = getSession(ctx)
+
+  if (!session) {
+    return null
+  }
+
+  if (session.step !== 'birthYear' && session.step !== 'notes') {
+    return null
+  }
+
+  return new InlineKeyboard().text('Пропустить', 'birthday:add:skip')
+}
+
+export function canSkipAddBirthdayStep(ctx: Context): boolean {
+  const session = getSession(ctx)
+
+  return session?.step === 'birthYear' || session?.step === 'notes'
+}
+
+export async function skipAddBirthdayStep(ctx: Context): Promise<string> {
+  const session = getSession(ctx)
+
+  if (!session) {
+    return 'Сейчас нечего пропускать.'
+  }
+
+  if (session.step === 'birthYear') {
+    setSession(ctx, {
+      step: 'notes',
+      draft: {
+        ...session.draft,
+        birthYear: null,
+      },
+    })
+
+    return 'Шаг 5 из 5: отправь заметку или нажми «Пропустить».'
+  }
+
+  if (session.step === 'notes') {
+    return finishAddBirthdayFlow(ctx, null)
+  }
+
+  return 'Сейчас этот шаг нельзя пропустить.'
+}
+
+async function finishAddBirthdayFlow(ctx: Context, notes: string | null): Promise<string> {
+  const session = getSession(ctx)
+
+  if (!session) {
+    return 'Сейчас wizard не активен.'
+  }
+
+  const user = await upsertUserFromContext(ctx)
+  const draft = session.draft
+
+  if (!draft.fullName || draft.day === undefined || draft.month === undefined) {
+    clearSession(ctx)
+    throw new Error('Birthday draft is incomplete')
+  }
+
+  const birthday = await prisma.birthday.create({
+    data: {
+      userId: user.id,
+      fullName: draft.fullName,
+      day: draft.day,
+      month: draft.month,
+      birthYear: draft.birthYear ?? null,
+      notes,
+    },
+  })
+
+  clearSession(ctx)
+
+  return formatBirthdayCreatedMessage(birthday)
 }
 
 export async function handleAddBirthdayText(ctx: Context, text: string): Promise<string> {
@@ -150,15 +237,18 @@ export async function handleAddBirthdayText(ctx: Context, text: string): Promise
       },
     })
 
-    return 'Шаг 4 из 5: отправь год рождения числом или напиши skip.'
+    return 'Шаг 4 из 5: отправь год рождения числом или нажми «Пропустить».'
   }
 
   if (session.step === 'birthYear') {
-    const normalizedText = text.trim().toLowerCase()
-    const birthYear = normalizedText === 'skip' ? null : parseInteger(normalizedText)
+    if (isSkipValue(text)) {
+      return skipAddBirthdayStep(ctx)
+    }
 
-    if (normalizedText !== 'skip' && (birthYear === null || !validateBirthYear(birthYear))) {
-      return 'Год рождения должен быть числом от 1900 до 2100 или словом skip.'
+    const birthYear = parseInteger(text.trim())
+
+    if (birthYear === null || !validateBirthYear(birthYear)) {
+      return 'Год рождения должен быть числом от 1900 до 2100. Если не хочешь указывать год, нажми «Пропустить».'
     }
 
     setSession(ctx, {
@@ -169,31 +259,14 @@ export async function handleAddBirthdayText(ctx: Context, text: string): Promise
       },
     })
 
-    return 'Шаг 5 из 5: отправь заметку или напиши skip.'
+    return 'Шаг 5 из 5: отправь заметку или нажми «Пропустить».'
   }
 
-  const normalizedText = text.trim()
-  const notes = normalizedText.toLowerCase() === 'skip' ? null : normalizedText
-  const user = await upsertUserFromContext(ctx)
-  const draft = session.draft
-
-  if (!draft.fullName || draft.day === undefined || draft.month === undefined) {
-    clearSession(ctx)
-    throw new Error('Birthday draft is incomplete')
+  if (isSkipValue(text)) {
+    return skipAddBirthdayStep(ctx)
   }
 
-  const birthday = await prisma.birthday.create({
-    data: {
-      userId: user.id,
-      fullName: draft.fullName,
-      day: draft.day,
-      month: draft.month,
-      birthYear: draft.birthYear ?? null,
-      notes,
-    },
-  })
+  const notes = text.trim() || null
 
-  clearSession(ctx)
-
-  return formatBirthdayCreatedMessage(birthday)
+  return finishAddBirthdayFlow(ctx, notes)
 }
