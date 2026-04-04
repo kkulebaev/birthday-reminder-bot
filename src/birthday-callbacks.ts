@@ -1,5 +1,6 @@
 import { InlineKeyboard, type Context } from 'grammy'
 import { prisma } from './db.js'
+import { getBirthdayListMessage, getListBackKeyboard } from './list-birthdays.js'
 
 type BirthdayRecord = {
   id: string
@@ -33,6 +34,8 @@ function getDetailKeyboard(recordId: string): InlineKeyboard {
   return new InlineKeyboard()
     .text('🔔 Toggle', `birthday:toggle:${recordId}`)
     .text('🗑 Delete', `birthday:delete:${recordId}`)
+    .row()
+    .text('⬅️ Назад к списку', 'birthday:list')
 }
 
 async function getOwnedBirthday(userId: string, birthdayId: string): Promise<BirthdayRecord | null> {
@@ -55,6 +58,25 @@ async function getOwnedBirthday(userId: string, birthdayId: string): Promise<Bir
   })
 }
 
+async function editCallbackMessage(ctx: Context, text: string, replyMarkup?: InlineKeyboard): Promise<void> {
+  const chatId = ctx.chat?.id
+  const messageId = ctx.callbackQuery?.message?.message_id
+
+  if (!chatId || !messageId) {
+    await ctx.reply(text, replyMarkup ? { reply_markup: replyMarkup } : undefined)
+    return
+  }
+
+  if (replyMarkup) {
+    await ctx.api.editMessageText(chatId, messageId, text, {
+      reply_markup: replyMarkup,
+    })
+    return
+  }
+
+  await ctx.api.editMessageText(chatId, messageId, text)
+}
+
 export async function sendBirthdayDetail(ctx: Context, userId: string, birthdayId: string): Promise<void> {
   const record = await getOwnedBirthday(userId, birthdayId)
 
@@ -69,6 +91,13 @@ export async function sendBirthdayDetail(ctx: Context, userId: string, birthdayI
 }
 
 export async function handleBirthdayCallback(ctx: Context, userId: string, data: string): Promise<boolean> {
+  if (data === 'birthday:list') {
+    const result = await getBirthdayListMessage(userId)
+    await editCallbackMessage(ctx, result.text, result.replyMarkup)
+    await ctx.answerCallbackQuery()
+    return true
+  }
+
   const parts = data.split(':')
 
   if (parts.length !== 3 || parts[0] !== 'birthday') {
@@ -105,12 +134,7 @@ export async function handleBirthdayCallback(ctx: Context, userId: string, data:
       },
     })
 
-    if (ctx.chat?.id && ctx.callbackQuery?.message?.message_id) {
-      await ctx.api.editMessageText(ctx.chat.id, ctx.callbackQuery.message.message_id, formatDetailText(updated), {
-        reply_markup: getDetailKeyboard(updated.id),
-      })
-    }
-
+    await editCallbackMessage(ctx, formatDetailText(updated), getDetailKeyboard(updated.id))
     await ctx.answerCallbackQuery({ text: 'Статус напоминаний обновлён' })
     return true
   }
@@ -121,10 +145,7 @@ export async function handleBirthdayCallback(ctx: Context, userId: string, data:
       data: { deletedAt: new Date() },
     })
 
-    if (ctx.chat?.id && ctx.callbackQuery?.message?.message_id) {
-      await ctx.api.editMessageText(ctx.chat.id, ctx.callbackQuery.message.message_id, `Удалил запись: ${record.fullName}`)
-    }
-
+    await editCallbackMessage(ctx, `Удалил запись: ${record.fullName}`, getListBackKeyboard())
     await ctx.answerCallbackQuery({ text: 'Запись удалена' })
     return true
   }

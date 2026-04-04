@@ -2,6 +2,16 @@ import { InlineKeyboard } from 'grammy'
 import { prisma } from './db.js'
 import { BIRTHDAY_PAGE_SIZE, formatBirthdayLine } from './birthday-format.js'
 
+function createBirthdayListKeyboard(idsAndNames: Array<{ id: string; fullName: string }>): InlineKeyboard {
+  const keyboard = new InlineKeyboard()
+
+  for (const item of idsAndNames) {
+    keyboard.text(item.fullName, `birthday:view:${item.id}`).row()
+  }
+
+  return keyboard
+}
+
 export async function getBirthdayListMessage(userId: string): Promise<{ text: string; replyMarkup?: InlineKeyboard }> {
   const birthdays = await prisma.birthday.findMany({
     where: {
@@ -25,11 +35,6 @@ export async function getBirthdayListMessage(userId: string): Promise<{ text: st
   }
 
   const lines = birthdays.map((birthday, index) => formatBirthdayLine(index + 1, birthday))
-  const keyboard = new InlineKeyboard()
-
-  for (const birthday of birthdays) {
-    keyboard.text(birthday.fullName, `birthday:view:${birthday.id}`).row()
-  }
 
   return {
     text: [
@@ -39,6 +44,10 @@ export async function getBirthdayListMessage(userId: string): Promise<{ text: st
       '',
       'Нажми на имя ниже, чтобы открыть карточку.',
     ].join('\n'),
-    replyMarkup: keyboard,
+    replyMarkup: createBirthdayListKeyboard(birthdays.map((birthday) => ({ id: birthday.id, fullName: birthday.fullName }))),
   }
+}
+
+export function getListBackKeyboard(): InlineKeyboard {
+  return new InlineKeyboard().text('⬅️ Назад к списку', 'birthday:list')
 }

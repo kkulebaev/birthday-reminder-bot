@@ -94,8 +94,16 @@ bot.command('search', async (ctx) => {
 
   const user = await upsertUserFromContext(ctx)
   const query = String(ctx.match).trim()
+  const result = await getBirthdaySearchMessage(user.id, query)
 
-  await ctx.reply(await getBirthdaySearchMessage(user.id, query))
+  if (result.replyMarkup) {
+    await ctx.reply(result.text, {
+      reply_markup: result.replyMarkup,
+    })
+    return
+  }
+
+  await ctx.reply(result.text)
 })
 
 bot.command('view', async (ctx) => {
