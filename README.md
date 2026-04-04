@@ -2,6 +2,14 @@
 
 Telegram-first birthday reminder bot.
 
+## Current status
+
+Bootstrap is ready:
+- TypeScript project setup
+- grammY bot bootstrap
+- Prisma schema for the first domain model
+- `/start` creates or updates a user and initializes default settings
+
 ## V1 scope
 
 - Multi-user early beta
@@ -24,6 +32,10 @@ Telegram-first birthday reminder bot.
 - `user_settings`
 - `birthdays`
 - `delivery_logs`
+
+## Environment variables
+
+See `.env.example`.
 
 ## Scripts
 
