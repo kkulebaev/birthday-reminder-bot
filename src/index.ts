@@ -83,7 +83,7 @@ bot.on('message:text', async (ctx, next) => {
     return
   }
 
-  await ctx.reply(handleAddBirthdayText(ctx, text))
+  await ctx.reply(await handleAddBirthdayText(ctx, text))
 })
 
 bot.command('ping', async (ctx) => {
