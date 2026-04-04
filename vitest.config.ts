@@ -4,5 +4,11 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['test/**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary'],
+      include: ['src/**/*.ts'],
+      exclude: ['src/db.ts', 'src/server.ts', 'src/index.ts'],
+    },
   },
 })
