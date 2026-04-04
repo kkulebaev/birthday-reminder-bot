@@ -24,6 +24,7 @@ import { cancelInlineEdit, handleInlineEditText, hasInlineEditSession } from './
 import { formatStartMessage } from './format.js'
 import { formatHelpMessage } from './help.js'
 import { getBirthdayListMessage } from './list-birthdays.js'
+import { sendMainMenu, handleMainMenuCallback } from './main-menu.js'
 import { notificationBot } from './notification-bot.js'
 import { getBirthdaySearchMessage } from './search-birthdays.js'
 import { sendTestNotification } from './test-notification.js'
@@ -68,6 +69,8 @@ bot.command('start', async (ctx) => {
       notifyAt: settings.notifyAt,
     }),
   )
+
+  await sendMainMenu(ctx)
 })
 
 bot.command('help', async (ctx) => {
@@ -233,6 +236,7 @@ bot.command('cancel', async (ctx) => {
 
   if (inlineCancelled || wizardCancelled) {
     await ctx.reply('Ок, отменил текущее действие.')
+    await sendMainMenu(ctx)
     return
   }
 
@@ -254,7 +258,13 @@ bot.on('callback_query:data', async (ctx) => {
     }
 
     await ctx.answerCallbackQuery({ text: 'Пропускаю' })
-    await replyWithOptionalKeyboard(ctx, await skipAddBirthdayStep(ctx))
+    const resultText = await skipAddBirthdayStep(ctx)
+    await replyWithOptionalKeyboard(ctx, resultText)
+
+    if (!isAddBirthdayFlowActive(ctx)) {
+      await sendMainMenu(ctx)
+    }
+
     return
   }
 
@@ -274,6 +284,12 @@ bot.on('callback_query:data', async (ctx) => {
     const birthdayId = data.replace('birthday:view:', '')
     await sendBirthdayDetail(ctx, user.id, birthdayId)
     await ctx.answerCallbackQuery()
+    return
+  }
+
+  const menuHandled = await handleMainMenuCallback(ctx, user.id, data)
+
+  if (menuHandled) {
     return
   }
 
@@ -308,7 +324,12 @@ bot.on('message:text', async (ctx, next) => {
     return
   }
 
-  await replyWithOptionalKeyboard(ctx, await handleAddBirthdayText(ctx, text))
+  const result = await handleAddBirthdayText(ctx, text)
+  await replyWithOptionalKeyboard(ctx, result.text)
+
+  if (result.completed) {
+    await sendMainMenu(ctx)
+  }
 })
 
 bot.command('ping', async (ctx) => {

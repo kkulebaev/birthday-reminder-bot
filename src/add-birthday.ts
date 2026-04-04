@@ -192,7 +192,7 @@ export function selectAddBirthdayMonth(ctx: Context, month: number): string {
     },
   })
 
-  return 'Шаг 4 из 5: отправь год рождения числом или нажми «Пропустить».'
+  return 'Шаг 4 из 5: отправь год рождения числом или нажми «Пропустить». '
 }
 
 async function finishAddBirthdayFlow(ctx: Context, notes: string | null): Promise<string> {
@@ -226,18 +226,24 @@ async function finishAddBirthdayFlow(ctx: Context, notes: string | null): Promis
   return formatBirthdayCreatedMessage(birthday)
 }
 
-export async function handleAddBirthdayText(ctx: Context, text: string): Promise<string> {
+export async function handleAddBirthdayText(ctx: Context, text: string): Promise<{ text: string; completed: boolean }> {
   const session = getSession(ctx)
 
   if (!session) {
-    return 'Сейчас wizard не активен.'
+    return {
+      text: 'Сейчас wizard не активен.',
+      completed: false,
+    }
   }
 
   if (session.step === 'fullName') {
     const fullName = text.trim()
 
     if (!fullName) {
-      return 'Не вижу имени. Отправь Full Name текстом.'
+      return {
+        text: 'Не вижу имени. Отправь Full Name текстом.',
+        completed: false,
+      }
     }
 
     setSession(ctx, {
@@ -248,14 +254,20 @@ export async function handleAddBirthdayText(ctx: Context, text: string): Promise
       },
     })
 
-    return 'Шаг 2 из 5: отправь день месяца числом от 1 до 31.'
+    return {
+      text: 'Шаг 2 из 5: отправь день месяца числом от 1 до 31.',
+      completed: false,
+    }
   }
 
   if (session.step === 'day') {
     const day = parseInteger(text.trim())
 
     if (day === null || !validateDay(day)) {
-      return 'День должен быть числом от 1 до 31.'
+      return {
+        text: 'День должен быть числом от 1 до 31.',
+        completed: false,
+      }
     }
 
     setSession(ctx, {
@@ -266,14 +278,20 @@ export async function handleAddBirthdayText(ctx: Context, text: string): Promise
       },
     })
 
-    return 'Шаг 3 из 5: выбери месяц кнопкой ниже или отправь номер месяца числом от 1 до 12.'
+    return {
+      text: 'Шаг 3 из 5: выбери месяц кнопкой ниже или отправь номер месяца числом от 1 до 12.',
+      completed: false,
+    }
   }
 
   if (session.step === 'month') {
     const month = parseInteger(text.trim())
 
     if (month === null || !validateMonth(month)) {
-      return 'Выбери месяц кнопкой ниже или отправь число от 1 до 12.'
+      return {
+        text: 'Выбери месяц кнопкой ниже или отправь число от 1 до 12.',
+        completed: false,
+      }
     }
 
     setSession(ctx, {
@@ -284,18 +302,27 @@ export async function handleAddBirthdayText(ctx: Context, text: string): Promise
       },
     })
 
-    return 'Шаг 4 из 5: отправь год рождения числом или нажми «Пропустить».'
+    return {
+      text: 'Шаг 4 из 5: отправь год рождения числом или нажми «Пропустить».',
+      completed: false,
+    }
   }
 
   if (session.step === 'birthYear') {
     if (isSkipValue(text)) {
-      return skipAddBirthdayStep(ctx)
+      return {
+        text: await skipAddBirthdayStep(ctx),
+        completed: false,
+      }
     }
 
     const birthYear = parseInteger(text.trim())
 
     if (birthYear === null || !validateBirthYear(birthYear)) {
-      return 'Год рождения должен быть числом от 1900 до 2100. Если не хочешь указывать год, нажми «Пропустить».'
+      return {
+        text: 'Год рождения должен быть числом от 1900 до 2100. Если не хочешь указывать год, нажми «Пропустить».',
+        completed: false,
+      }
     }
 
     setSession(ctx, {
@@ -306,14 +333,26 @@ export async function handleAddBirthdayText(ctx: Context, text: string): Promise
       },
     })
 
-    return 'Шаг 5 из 5: отправь заметку или нажми «Пропустить».'
+    return {
+      text: 'Шаг 5 из 5: отправь заметку или нажми «Пропустить».',
+      completed: false,
+    }
   }
 
   if (isSkipValue(text)) {
-    return skipAddBirthdayStep(ctx)
+    const resultText = await skipAddBirthdayStep(ctx)
+
+    return {
+      text: resultText,
+      completed: !isAddBirthdayFlowActive(ctx),
+    }
   }
 
   const notes = text.trim() || null
+  const resultText = await finishAddBirthdayFlow(ctx, notes)
 
-  return finishAddBirthdayFlow(ctx, notes)
+  return {
+    text: resultText,
+    completed: true,
+  }
 }
