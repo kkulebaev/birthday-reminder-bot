@@ -10,7 +10,7 @@ describe('formatStartMessage', () => {
     })
 
     expect(result).toContain('Привет, Костя ✨')
-    expect(result).toContain('/menu — открыть главное меню')
+    expect(result).toContain('Начни с /menu — там основные действия.')
     expect(result).toContain('• Часовой пояс: Europe/Moscow')
     expect(result).toContain('• Время уведомления: 09:00')
   })

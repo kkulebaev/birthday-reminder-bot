@@ -5,15 +5,15 @@ import { getBirthdayListMessage } from './list-birthdays.js'
 import { getUpcomingBirthdaysMessage } from './upcoming-birthdays.js'
 
 export function getMainMenuText(): string {
-  return 'Главное меню:'
+  return 'Что хочешь сделать?'
 }
 
 export function getMainMenuKeyboard(): InlineKeyboard {
   return new InlineKeyboard()
     .text('➕ Добавить', 'menu:add')
-    .text('📋 Список', 'menu:list')
-    .row()
     .text('🎈 Ближайшие', 'menu:upcoming')
+    .row()
+    .text('📋 Список', 'menu:list')
     .text('ℹ️ Помощь', 'menu:help')
 }
 
