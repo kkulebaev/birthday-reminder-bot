@@ -19,7 +19,8 @@ function formatBirthdayDetail(birthday: Birthday): string {
   const notes = birthday.notes ? birthday.notes : '—'
 
   return [
-    `Full Name: ${birthday.fullName}`,
+    `🎂 ${birthday.fullName}`,
+    '',
     `Дата: ${formatDateLine(birthday)}`,
     `Напоминания: ${formatReminderLine(birthday)}`,
     `Заметка: ${notes}`,
@@ -206,7 +207,7 @@ export async function updateBirthdayNote(userId: string, query: string, note: st
     },
   })
 
-  return ['Заметку обновил.', '', formatBirthdayDetail(birthday)].join('\n')
+  return ['Готово, заметку обновил.', '', formatBirthdayDetail(birthday)].join('\n')
 }
 
 export async function toggleBirthdayReminder(userId: string, query: string): Promise<string> {
@@ -232,7 +233,7 @@ export async function toggleBirthdayReminder(userId: string, query: string): Pro
     },
   })
 
-  return ['Статус напоминаний обновил.', '', formatBirthdayDetail(birthday)].join('\n')
+  return ['Готово, статус напоминаний обновил.', '', formatBirthdayDetail(birthday)].join('\n')
 }
 
 export async function softDeleteBirthday(userId: string, query: string): Promise<string> {
@@ -258,7 +259,7 @@ export async function softDeleteBirthday(userId: string, query: string): Promise
     },
   })
 
-  return `Удалил запись: ${birthday.fullName}`
+  return `Готово, удалил запись: ${birthday.fullName}`
 }
 
 export async function renameBirthday(userId: string, query: string, fullName: string): Promise<string> {
@@ -285,7 +286,7 @@ export async function renameBirthday(userId: string, query: string, fullName: st
     },
   })
 
-  return ['Имя обновил.', '', formatBirthdayDetail(birthday)].join('\n')
+  return ['Готово, имя обновил.', '', formatBirthdayDetail(birthday)].join('\n')
 }
 
 export async function setBirthdayDate(userId: string, query: string, dateInput: string): Promise<string> {
@@ -298,7 +299,7 @@ export async function setBirthdayDate(userId: string, query: string, dateInput: 
   const parsedDate = parseDateInput(dateInput)
 
   if (!parsedDate) {
-    return 'Дата должна быть в формате DD.MM или DD.MM.YYYY'
+    return 'Дата должна быть в формате DD.MM или DD.MM.YYYY.'
   }
 
   const birthdays = await findBirthdays(userId, normalizedQuery)
@@ -319,5 +320,5 @@ export async function setBirthdayDate(userId: string, query: string, dateInput: 
     },
   })
 
-  return ['Дату обновил.', '', formatBirthdayDetail(birthday)].join('\n')
+  return ['Готово, дату обновил.', '', formatBirthdayDetail(birthday)].join('\n')
 }

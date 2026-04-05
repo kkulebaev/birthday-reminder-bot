@@ -25,6 +25,7 @@ function formatDate(day: number, month: number, birthYear: number | null): strin
 export function formatDetailText(record: BirthdayRecord): string {
   return [
     `🎂 ${record.fullName}`,
+    '',
     `Дата: ${formatDate(record.day, record.month, record.birthYear)}`,
     `Напоминания: ${record.isReminderEnabled ? 'включены' : 'выключены'}`,
     `Заметка: ${record.notes ?? '—'}`,
@@ -93,7 +94,7 @@ export async function sendBirthdayDetail(ctx: Context, userId: string, birthdayI
   const record = await getOwnedBirthday(userId, birthdayId)
 
   if (!record) {
-    await ctx.reply('Запись не найдена.')
+    await ctx.reply('Не нашёл такую запись.')
     return
   }
 
@@ -106,7 +107,7 @@ export async function sendUpdatedBirthdayDetail(ctx: Context, userId: string, bi
   const record = await getOwnedBirthday(userId, birthdayId)
 
   if (!record) {
-    await ctx.reply('Запись не найдена.')
+    await ctx.reply('Не нашёл такую запись.')
     return
   }
 
@@ -143,7 +144,7 @@ export async function handleBirthdayCallback(ctx: Context, userId: string, data:
   const record = await getOwnedBirthday(userId, birthdayId)
 
   if (!record) {
-    await ctx.answerCallbackQuery({ text: 'Запись не найдена' })
+    await ctx.answerCallbackQuery({ text: 'Не нашёл запись' })
     return true
   }
 
@@ -174,7 +175,7 @@ export async function handleBirthdayCallback(ctx: Context, userId: string, data:
       data: { deletedAt: new Date() },
     })
 
-    await editCallbackMessage(ctx, `Удалил запись: ${record.fullName}`, getListBackKeyboard())
+    await editCallbackMessage(ctx, `Готово, удалил запись: ${record.fullName}`, getListBackKeyboard())
     await ctx.answerCallbackQuery({ text: 'Удалено' })
     return true
   }

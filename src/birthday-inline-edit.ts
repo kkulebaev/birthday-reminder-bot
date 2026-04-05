@@ -112,7 +112,7 @@ export async function handleInlineEditText(ctx: Context, userId: string, text: s
 
   if (!birthday) {
     sessions.delete(getUserKey(ctx))
-    return { kind: 'missing', message: 'Запись не найдена.' }
+    return { kind: 'missing', message: 'Не нашёл такую запись.' }
   }
 
   if (session.mode === 'note') {
