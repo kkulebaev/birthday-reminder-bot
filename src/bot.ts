@@ -3,10 +3,8 @@ import { Bot, type Context, type InlineKeyboard } from 'grammy'
 import {
   beginAddBirthdayFlow,
   cancelAddBirthdayFlow,
-  canConfirmAddBirthday,
   canPickAddBirthdayMonth,
   canSkipAddBirthdayStep,
-  confirmAddBirthdayFlow,
   getAddBirthdayOptionalKeyboard,
   getAddBirthdaySuccessKeyboard,
   handleAddBirthdayText,
@@ -343,38 +341,19 @@ bot.on('callback_query:data', async (ctx) => {
     }
 
     await ctx.answerCallbackQuery({ text: 'Пропускаю' })
-    const resultText = await skipAddBirthdayStep(ctx)
-    await replyWithOptionalKeyboard(ctx, resultText)
-    return
-  }
+    const result = await skipAddBirthdayStep(ctx)
 
-  if (data === 'birthday:add:confirm') {
-    if (!canConfirmAddBirthday(ctx)) {
-      await ctx.answerCallbackQuery({ text: 'Сейчас нечего сохранять' })
-      return
-    }
-
-    await ctx.answerCallbackQuery({ text: 'Сохраняю' })
-    const result = await confirmAddBirthdayFlow(ctx)
-
-    if (result.birthdayId) {
+    if (result.completed && result.birthdayId) {
       await ctx.reply(result.text, {
         reply_markup: getAddBirthdaySuccessKeyboard(result.birthdayId),
       })
-    } else {
-      await ctx.reply(result.text)
-      await sendMainMenu(ctx)
+      return
     }
+
+    await replyWithOptionalKeyboard(ctx, result.text)
     return
   }
 
-  if (data === 'birthday:add:cancel') {
-    await ctx.answerCallbackQuery({ text: 'Отменено' })
-    cancelAddBirthdayFlow(ctx)
-    await ctx.reply('Ок, не сохраняю эту запись.')
-    await sendMainMenu(ctx)
-    return
-  }
 
   if (data.startsWith('birthday:add:month:')) {
     if (!canPickAddBirthdayMonth(ctx)) {
@@ -538,6 +517,14 @@ bot.on('message:text', async (ctx, next) => {
   }
 
   const result = await handleAddBirthdayText(ctx, text)
+
+  if (result.completed && result.birthdayId) {
+    await ctx.reply(result.text, {
+      reply_markup: getAddBirthdaySuccessKeyboard(result.birthdayId),
+    })
+    return
+  }
+
   await replyWithOptionalKeyboard(ctx, result.text)
 
   if (result.completed) {

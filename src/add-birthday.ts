@@ -11,7 +11,7 @@ type AddBirthdayDraft = {
   notes?: string | null
 }
 
-type AddBirthdayStep = 'fullName' | 'day' | 'month' | 'birthYear' | 'notes' | 'confirm'
+type AddBirthdayStep = 'fullName' | 'day' | 'month' | 'birthYear' | 'notes'
 
 type AddBirthdaySession = {
   step: AddBirthdayStep
@@ -103,16 +103,6 @@ function formatBirthdayCreatedMessage(birthday: Birthday): string {
   ].join('\n')
 }
 
-function formatDraftSummary(draft: AddBirthdayDraft): string {
-  return [
-    'Проверь перед сохранением:',
-    '',
-    formatDraftProgress(draft),
-    '',
-    'Если всё верно, нажми «Сохранить».',
-  ].join('\n')
-}
-
 function getMonthKeyboard(): InlineKeyboard {
   const keyboard = new InlineKeyboard()
 
@@ -125,12 +115,6 @@ function getMonthKeyboard(): InlineKeyboard {
   })
 
   return keyboard
-}
-
-function getConfirmKeyboard(): InlineKeyboard {
-  return new InlineKeyboard()
-    .text('✅ Сохранить', 'birthday:add:confirm')
-    .text('❌ Отмена', 'birthday:add:cancel')
 }
 
 export function getAddBirthdaySuccessKeyboard(birthdayId: string): InlineKeyboard {
@@ -179,10 +163,6 @@ export function getAddBirthdayOptionalKeyboard(ctx: Context): InlineKeyboard | n
     return new InlineKeyboard().text('Пропустить', 'birthday:add:skip')
   }
 
-  if (session.step === 'confirm') {
-    return getConfirmKeyboard()
-  }
-
   return null
 }
 
@@ -198,57 +178,93 @@ export function canPickAddBirthdayMonth(ctx: Context): boolean {
   return session?.step === 'month'
 }
 
-export function canConfirmAddBirthday(ctx: Context): boolean {
-  const session = getSession(ctx)
-
-  return session?.step === 'confirm'
-}
-
-function moveToConfirm(ctx: Context, draft: AddBirthdayDraft): string {
-  setSession(ctx, {
-    step: 'confirm',
-    draft,
-  })
-
-  return formatDraftSummary(draft)
-}
-
-export async function skipAddBirthdayStep(ctx: Context): Promise<string> {
+async function finishAddBirthdayFlow(ctx: Context, draftOverride?: AddBirthdayDraft): Promise<{ text: string; birthdayId: string }> {
   const session = getSession(ctx)
 
   if (!session) {
-    return 'Сейчас нечего пропускать.'
+    return {
+      text: 'Сейчас добавление не активно.',
+      birthdayId: '',
+    }
+  }
+
+  const user = await upsertUserFromContext(ctx)
+  const draft = draftOverride ?? session.draft
+
+  if (!draft.fullName || draft.day === undefined || draft.month === undefined) {
+    clearSession(ctx)
+    throw new Error('Birthday draft is incomplete')
+  }
+
+  const birthday = await prisma.birthday.create({
+    data: {
+      userId: user.id,
+      fullName: draft.fullName,
+      day: draft.day,
+      month: draft.month,
+      birthYear: draft.birthYear ?? null,
+      notes: draft.notes ?? null,
+    },
+  })
+
+  clearSession(ctx)
+
+  return {
+    text: formatBirthdayCreatedMessage(birthday),
+    birthdayId: birthday.id,
+  }
+}
+
+export async function skipAddBirthdayStep(ctx: Context): Promise<{ text: string; completed: boolean; birthdayId?: string }> {
+  const session = getSession(ctx)
+
+  if (!session) {
+    return {
+      text: 'Сейчас нечего пропускать.',
+      completed: false,
+    }
   }
 
   if (session.step === 'birthYear') {
+    const updatedDraft = {
+      ...session.draft,
+      birthYear: null,
+    }
+
     setSession(ctx, {
       step: 'notes',
-      draft: {
-        ...session.draft,
-        birthYear: null,
-      },
+      draft: updatedDraft,
     })
 
-    return [
-      'Шаг 5 из 5: добавь заметку или нажми «Пропустить».',
-      '',
-      'Например: коллега с прошлой работы, любит звонки, поздравить утром.',
-      '',
-      formatDraftProgress({
-        ...session.draft,
-        birthYear: null,
-      }),
-    ].join('\n')
+    return {
+      text: [
+        'Шаг 5 из 5: добавь заметку или нажми «Пропустить».',
+        '',
+        'Например: коллега с прошлой работы, любит звонки, поздравить утром.',
+        '',
+        formatDraftProgress(updatedDraft),
+      ].join('\n'),
+      completed: false,
+    }
   }
 
   if (session.step === 'notes') {
-    return moveToConfirm(ctx, {
+    const result = await finishAddBirthdayFlow(ctx, {
       ...session.draft,
       notes: null,
     })
+
+    return {
+      text: result.text,
+      completed: true,
+      birthdayId: result.birthdayId,
+    }
   }
 
-  return 'Сейчас этот шаг нельзя пропустить.'
+  return {
+    text: 'Сейчас этот шаг нельзя пропустить.',
+    completed: false,
+  }
 }
 
 export function selectAddBirthdayMonth(ctx: Context, month: number): string {
@@ -279,62 +295,15 @@ export function selectAddBirthdayMonth(ctx: Context, month: number): string {
   ].join('\n')
 }
 
-async function finishAddBirthdayFlow(ctx: Context): Promise<{ text: string; birthdayId: string }> {
+export async function handleAddBirthdayText(
+  ctx: Context,
+  text: string,
+): Promise<{ text: string; completed: boolean; birthdayId?: string }> {
   const session = getSession(ctx)
 
   if (!session) {
     return {
-      text: 'Сейчас wizard не активен.',
-      birthdayId: '',
-    }
-  }
-
-  const user = await upsertUserFromContext(ctx)
-  const draft = session.draft
-
-  if (!draft.fullName || draft.day === undefined || draft.month === undefined) {
-    clearSession(ctx)
-    throw new Error('Birthday draft is incomplete')
-  }
-
-  const birthday = await prisma.birthday.create({
-    data: {
-      userId: user.id,
-      fullName: draft.fullName,
-      day: draft.day,
-      month: draft.month,
-      birthYear: draft.birthYear ?? null,
-      notes: draft.notes ?? null,
-    },
-  })
-
-  clearSession(ctx)
-
-  return {
-    text: formatBirthdayCreatedMessage(birthday),
-    birthdayId: birthday.id,
-  }
-}
-
-export async function confirmAddBirthdayFlow(ctx: Context): Promise<{ text: string; birthdayId: string }> {
-  const session = getSession(ctx)
-
-  if (!session || session.step !== 'confirm') {
-    return {
-      text: 'Сейчас нечего сохранять.',
-      birthdayId: '',
-    }
-  }
-
-  return finishAddBirthdayFlow(ctx)
-}
-
-export async function handleAddBirthdayText(ctx: Context, text: string): Promise<{ text: string; completed: boolean }> {
-  const session = getSession(ctx)
-
-  if (!session) {
-    return {
-      text: 'Сейчас wizard не активен.',
+      text: 'Сейчас добавление не активно.',
       completed: false,
     }
   }
@@ -433,10 +402,7 @@ export async function handleAddBirthdayText(ctx: Context, text: string): Promise
 
   if (session.step === 'birthYear') {
     if (isSkipValue(text)) {
-      return {
-        text: await skipAddBirthdayStep(ctx),
-        completed: false,
-      }
+      return skipAddBirthdayStep(ctx)
     }
 
     const birthYear = parseInteger(text.trim())
@@ -469,29 +435,18 @@ export async function handleAddBirthdayText(ctx: Context, text: string): Promise
     }
   }
 
-  if (session.step === 'confirm') {
-    return {
-      text: 'Проверь данные и нажми «Сохранить» или «Отмена».',
-      completed: false,
-    }
-  }
-
   if (isSkipValue(text)) {
-    const resultText = await skipAddBirthdayStep(ctx)
-
-    return {
-      text: resultText,
-      completed: false,
-    }
+    return skipAddBirthdayStep(ctx)
   }
 
-  const notes = text.trim() || null
+  const result = await finishAddBirthdayFlow(ctx, {
+    ...session.draft,
+    notes: text.trim() || null,
+  })
 
   return {
-    text: moveToConfirm(ctx, {
-      ...session.draft,
-      notes,
-    }),
-    completed: false,
+    text: result.text,
+    completed: true,
+    birthdayId: result.birthdayId,
   }
 }
