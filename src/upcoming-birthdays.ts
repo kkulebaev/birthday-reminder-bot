@@ -5,6 +5,7 @@ const UPCOMING_LIMIT = 5
 export const DAY_IN_MS = 24 * 60 * 60 * 1000
 
 export type UpcomingBirthday = {
+  id: string
   fullName: string
   day: number
   month: number
@@ -45,11 +46,12 @@ export function formatUpcomingLine(index: number, birthday: UpcomingBirthday, fr
 }
 
 export function sortUpcomingBirthdays(
-  birthdays: Array<{ fullName: string; day: number; month: number }>,
+  birthdays: Array<{ id: string; fullName: string; day: number; month: number }>,
   fromDate: Date,
 ): UpcomingBirthday[] {
   return birthdays
     .map((birthday) => ({
+      id: birthday.id,
       fullName: birthday.fullName,
       day: birthday.day,
       month: birthday.month,
@@ -66,6 +68,22 @@ export function createEmptyUpcomingKeyboard(): InlineKeyboard {
     .text('🏠 Главное меню', 'menu:home')
 }
 
+export function createUpcomingKeyboard(upcoming: UpcomingBirthday[]): InlineKeyboard {
+  const keyboard = new InlineKeyboard()
+
+  for (const birthday of upcoming) {
+    keyboard.text(`${birthday.fullName} — ${formatUpcomingDate(birthday.nextOccurrence)}`, `birthday:view:${birthday.id}`).row()
+  }
+
+  keyboard
+    .text('➕ Добавить', 'menu:add')
+    .text('📋 Список', 'menu:list')
+    .row()
+    .text('🏠 Главное меню', 'menu:home')
+
+  return keyboard
+}
+
 export async function getUpcomingBirthdaysMessage(userId: string): Promise<{ text: string; replyMarkup: InlineKeyboard }> {
   const fromDate = getStartOfUtcDay(new Date())
   const birthdays = await prisma.birthday.findMany({
@@ -74,6 +92,7 @@ export async function getUpcomingBirthdaysMessage(userId: string): Promise<{ tex
       deletedAt: null,
     },
     select: {
+      id: true,
       fullName: true,
       day: true,
       month: true,
@@ -98,11 +117,9 @@ export async function getUpcomingBirthdaysMessage(userId: string): Promise<{ tex
       'Ближайшие дни рождения:',
       '',
       ...upcoming.map((birthday, index) => formatUpcomingLine(index + 1, birthday, fromDate)),
+      '',
+      'Нажми на человека ниже, чтобы открыть карточку.',
     ].join('\n'),
-    replyMarkup: new InlineKeyboard()
-      .text('➕ Добавить', 'menu:add')
-      .text('📋 Список', 'menu:list')
-      .row()
-      .text('🏠 Главное меню', 'menu:home'),
+    replyMarkup: createUpcomingKeyboard(upcoming),
   }
 }
