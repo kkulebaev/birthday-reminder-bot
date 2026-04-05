@@ -10,9 +10,15 @@ export function createBirthdaySearchKeyboard(idsAndNames: Array<{ id: string; fu
     keyboard.text(item.fullName, `birthday:view:${item.id}`).row()
   }
 
-  keyboard.text('🏠 Главное меню', 'menu:home')
+  keyboard.text('➕ Добавить', 'menu:add').text('🏠 Главное меню', 'menu:home')
 
   return keyboard
+}
+
+export function createEmptySearchKeyboard(): InlineKeyboard {
+  return new InlineKeyboard()
+    .text('➕ Добавить', 'menu:add')
+    .text('🏠 Главное меню', 'menu:home')
 }
 
 export function formatBirthdaySearchMessage(query: string, lines: string[]): string {
@@ -21,7 +27,15 @@ export function formatBirthdaySearchMessage(query: string, lines: string[]): str
     '',
     ...lines,
     '',
-    'Нажми на имя ниже, чтобы открыть карточку.',
+    'Нашёл несколько вариантов — нажми на нужное имя ниже.',
+  ].join('\n')
+}
+
+export function formatEmptyBirthdaySearchMessage(query: string): string {
+  return [
+    `Ничего не нашёл по запросу: ${query}`,
+    '',
+    'Попробуй другой запрос или добавь новую запись.',
   ].join('\n')
 }
 
@@ -59,8 +73,8 @@ export async function getBirthdaySearchResult(userId: string, query: string): Pr
   if (birthdays.length === 0) {
     return {
       kind: 'empty',
-      text: `Ничего не нашёл по запросу: ${normalizedQuery}`,
-      replyMarkup: getMainMenuKeyboard(),
+      text: formatEmptyBirthdaySearchMessage(normalizedQuery),
+      replyMarkup: createEmptySearchKeyboard(),
     }
   }
 
@@ -70,8 +84,8 @@ export async function getBirthdaySearchResult(userId: string, query: string): Pr
     if (!birthday) {
       return {
         kind: 'empty',
-        text: `Ничего не нашёл по запросу: ${normalizedQuery}`,
-        replyMarkup: getMainMenuKeyboard(),
+        text: formatEmptyBirthdaySearchMessage(normalizedQuery),
+        replyMarkup: createEmptySearchKeyboard(),
       }
     }
 
@@ -87,20 +101,5 @@ export async function getBirthdaySearchResult(userId: string, query: string): Pr
     kind: 'multiple',
     text: formatBirthdaySearchMessage(normalizedQuery, lines),
     replyMarkup: createBirthdaySearchKeyboard(birthdays.map((birthday) => ({ id: birthday.id, fullName: birthday.fullName }))),
-  }
-}
-
-export async function getBirthdaySearchMessage(userId: string, query: string): Promise<{ text: string; replyMarkup?: InlineKeyboard }> {
-  const result = await getBirthdaySearchResult(userId, query)
-
-  if (result.kind === 'single') {
-    return {
-      text: 'Открываю карточку...',
-    }
-  }
-
-  return {
-    text: result.text,
-    replyMarkup: result.replyMarkup,
   }
 }

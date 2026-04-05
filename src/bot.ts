@@ -14,7 +14,7 @@ import {
   skipAddBirthdayStep,
 } from './add-birthday.js'
 import {
-  getBirthdayDetailMessage,
+  getBirthdayDetailResult,
   renameBirthday,
   setBirthdayDate,
   softDeleteBirthday,
@@ -154,8 +154,14 @@ bot.command('view', async (ctx) => {
 
   const user = await upsertUserFromContext(ctx)
   const query = String(ctx.match).trim()
+  const result = await getBirthdayDetailResult(user.id, query)
 
-  await ctx.reply(await getBirthdayDetailMessage(user.id, query))
+  if (result.replyMarkup) {
+    await ctx.reply(result.text, { reply_markup: result.replyMarkup })
+    return
+  }
+
+  await ctx.reply(result.text)
 })
 
 bot.command('note', async (ctx) => {

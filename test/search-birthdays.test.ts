@@ -9,10 +9,10 @@ describe('search birthdays helpers', () => {
 
     expect(result).toContain('Результаты поиска: иван')
     expect(result).toContain('1. Иван Иванов — 07.04 🔔')
-    expect(result).toContain('Нажми на имя ниже, чтобы открыть карточку.')
+    expect(result).toContain('Нашёл несколько вариантов — нажми на нужное имя ниже.')
   })
 
-  it('builds search keyboard with home button', () => {
+  it('builds search keyboard with add and home buttons', () => {
     const keyboard = createBirthdaySearchKeyboard([
       { id: 'b1', fullName: 'Иван Иванов' },
       { id: 'b2', fullName: 'Мария Петрова' },
@@ -20,6 +20,7 @@ describe('search birthdays helpers', () => {
 
     expect(keyboard.inline_keyboard[0]?.[0]?.text).toBe('Иван Иванов')
     expect(keyboard.inline_keyboard[1]?.[0]?.text).toBe('Мария Петрова')
-    expect(keyboard.inline_keyboard[2]?.[0]?.text).toBe('🏠 Главное меню')
+    expect(keyboard.inline_keyboard[2]?.[0]?.text).toBe('➕ Добавить')
+    expect(keyboard.inline_keyboard[2]?.[1]?.text).toBe('🏠 Главное меню')
   })
 })
