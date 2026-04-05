@@ -2,7 +2,7 @@ import 'dotenv/config'
 import { DeliveryStatus, type Birthday } from '@prisma/client'
 import { Bot } from 'grammy'
 import { prisma } from './db.js'
-import { formatBirthdayNotification } from './notification-format.js'
+import { formatBirthdayNotification, getBirthdayNotificationKeyboard } from './notification-format.js'
 
 type DueBirthday = {
   birthday: Birthday
@@ -245,6 +245,9 @@ export async function runScheduler(now: Date = new Date()): Promise<void> {
       const message = await bot.api.sendMessage(
         dueBirthday.telegramChatId,
         formatBirthdayNotification(dueBirthday.birthday),
+        {
+          reply_markup: getBirthdayNotificationKeyboard(dueBirthday.birthday.id),
+        },
       )
 
       await markDeliveryAttempt({
