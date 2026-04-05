@@ -14,6 +14,6 @@ export function formatBirthdayNotification(birthday: Birthday): string {
 
 export function getBirthdayNotificationKeyboard(birthdayId: string): InlineKeyboard {
   return new InlineKeyboard()
-    .text('🎂 Открыть запись', `birthday:view:${birthdayId}`)
+    .text('🎂 Открыть карточку', `birthday:view:${birthdayId}`)
     .text('🔕 Выключить напоминания', `birthday:toggle:${birthdayId}`)
 }

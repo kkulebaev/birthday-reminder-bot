@@ -7,14 +7,14 @@ describe('formatHelpMessage', () => {
 
     expect(result).toContain('/menu — открыть главное меню')
     expect(result).toContain('/add — добавить день рождения')
-    expect(result).toContain('/upcoming — посмотреть ближайшие дни рождения')
-    expect(result).toContain('/search <name> — найти запись по имени')
+    expect(result).toContain('/upcoming — посмотреть ближайшие даты')
+    expect(result).toContain('/search <name> — быстро найти человека')
   })
 
   it('includes menu-first guidance', () => {
     const result = formatHelpMessage()
 
-    expect(result).toContain('Остальное доступно из карточки записи и через кнопки.')
+    expect(result).toContain('Остальное доступно из карточки и через кнопки.')
     expect(result).toContain('Если сомневаешься — просто открой /menu.')
   })
 })

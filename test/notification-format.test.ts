@@ -41,7 +41,7 @@ describe('formatBirthdayNotification', () => {
   it('builds notification keyboard with open and disable actions', () => {
     const keyboard = getBirthdayNotificationKeyboard('b1')
 
-    expect(keyboard.inline_keyboard[0]?.map((button) => button.text)).toEqual(['🎂 Открыть запись', '🔕 Выключить напоминания'])
+    expect(keyboard.inline_keyboard[0]?.map((button) => button.text)).toEqual(['🎂 Открыть карточку', '🔕 Выключить напоминания'])
     expect(keyboard.inline_keyboard[0]?.[0]?.callback_data).toBe('birthday:view:b1')
     expect(keyboard.inline_keyboard[0]?.[1]?.callback_data).toBe('birthday:toggle:b1')
   })

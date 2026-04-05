@@ -51,11 +51,13 @@ export function formatSettingsText(settings: UserSettingsRecord): string {
   return [
     '⚙️ Настройки',
     '',
+    'Текущие параметры уведомлений:',
+    '',
     `Часовой пояс: ${settings.timezone}`,
     `Время уведомления: ${settings.notifyAt}`,
     `Уведомления: ${formatNotificationsEnabled(settings.notificationsEnabled)}`,
     '',
-    'Можешь изменить настройки кнопками ниже или отправить новое значение после выбора пункта.',
+    'Можешь изменить их кнопками ниже или отправить новое значение после выбора пункта.',
   ].join('\n')
 }
 

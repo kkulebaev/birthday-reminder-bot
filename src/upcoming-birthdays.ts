@@ -113,7 +113,7 @@ export async function getUpcomingBirthdaysMessage(userId: string): Promise<{ tex
 
   return {
     text: [
-      'Ближайшие дни рождения:',
+      '🎈 Ближайшие дни рождения',
       '',
       ...upcoming.map((birthday, index) => formatUpcomingLine(index + 1, birthday, fromDate)),
       '',

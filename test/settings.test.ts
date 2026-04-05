@@ -21,7 +21,8 @@ describe('settings helpers', () => {
     expect(result).toContain('Часовой пояс: Europe/Moscow')
     expect(result).toContain('Время уведомления: 09:00')
     expect(result).toContain('Уведомления: включены')
-    expect(result).toContain('Можешь изменить настройки кнопками ниже')
+    expect(result).toContain('Текущие параметры уведомлений:')
+    expect(result).toContain('Можешь изменить их кнопками ниже')
   })
 
   it('builds settings keyboard with edit actions, presets, and toggle', () => {

@@ -96,7 +96,7 @@ function formatBirthdayCreatedMessage(birthday: Birthday): string {
   const notes = birthday.notes ? `\nЗаметка: ${birthday.notes}` : ''
 
   return [
-    `Готово, сохранил запись для ${birthday.fullName}.`,
+    `Готово, сохранил день рождения для ${birthday.fullName}.`,
     '',
     `Дата: ${day}.${month}${year}`,
     notes ? `Заметка: ${birthday.notes}` : 'Заметка: —',
