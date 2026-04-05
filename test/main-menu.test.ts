@@ -10,9 +10,10 @@ describe('main menu', () => {
     const keyboard = getMainMenuKeyboard()
     const inlineKeyboard = keyboard.inline_keyboard
 
-    expect(inlineKeyboard).toHaveLength(2)
+    expect(inlineKeyboard).toHaveLength(3)
     expect(inlineKeyboard[0]?.map((button) => button.text)).toEqual(['➕ Добавить', '🎈 Ближайшие'])
-    expect(inlineKeyboard[1]?.map((button) => button.text)).toEqual(['📋 Список', 'ℹ️ Помощь'])
+    expect(inlineKeyboard[1]?.map((button) => button.text)).toEqual(['📋 Список', '⚙️ Настройки'])
+    expect(inlineKeyboard[2]?.map((button) => button.text)).toEqual(['ℹ️ Помощь'])
   })
 
   it('builds home button keyboard', () => {

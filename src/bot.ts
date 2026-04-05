@@ -39,6 +39,15 @@ import { getBirthdayListMessage } from './list-birthdays.js'
 import { sendMainMenu, handleMainMenuCallback } from './main-menu.js'
 import { notificationBot } from './notification-bot.js'
 import { getBirthdaySearchResult } from './search-birthdays.js'
+import {
+  beginSettingsEdit,
+  cancelSettingsEdit,
+  getSettingsMessage,
+  handleSettingsEditText,
+  hasSettingsEditSession,
+  setNotifyTimePreset,
+  toggleNotificationsEnabled,
+} from './settings.js'
 import { sendTestNotification } from './test-notification.js'
 import { getUpcomingBirthdaysMessage } from './upcoming-birthdays.js'
 import { isPrivateChat, upsertUserFromContext } from './user.js'
@@ -323,9 +332,10 @@ bot.command('cancel', async (ctx) => {
   }
 
   const inlineCancelled = cancelInlineEdit(ctx)
+  const settingsCancelled = cancelSettingsEdit(ctx)
   const wizardCancelled = cancelAddBirthdayFlow(ctx)
 
-  if (inlineCancelled || wizardCancelled) {
+  if (inlineCancelled || settingsCancelled || wizardCancelled) {
     await ctx.reply('Ок, отменил текущее действие.')
     await sendMainMenu(ctx)
     return
@@ -417,6 +427,49 @@ bot.on('callback_query:data', async (ctx) => {
     return
   }
 
+  if (data === 'settings:edit-timezone') {
+    await ctx.answerCallbackQuery({ text: 'Жду часовой пояс' })
+    await ctx.reply(beginSettingsEdit(ctx, 'timezone'))
+    return
+  }
+
+  if (data === 'settings:edit-notifyAt') {
+    await ctx.answerCallbackQuery({ text: 'Жду новое время' })
+    await ctx.reply(beginSettingsEdit(ctx, 'notifyAt'))
+    return
+  }
+
+  if (data === 'settings:toggle-notifications') {
+    const message = await toggleNotificationsEnabled(user.id)
+    const settingsMessage = await getSettingsMessage(user.id)
+
+    await ctx.answerCallbackQuery({ text: message })
+    if (ctx.chat?.id && ctx.callbackQuery?.message?.message_id) {
+      await ctx.api.editMessageText(ctx.chat.id, ctx.callbackQuery.message.message_id, settingsMessage.text, {
+        reply_markup: settingsMessage.replyMarkup,
+      })
+    } else {
+      await ctx.reply(settingsMessage.text, { reply_markup: settingsMessage.replyMarkup })
+    }
+    return
+  }
+
+  if (data.startsWith('settings:preset-notifyAt:')) {
+    const notifyAt = data.replace('settings:preset-notifyAt:', '')
+    const message = await setNotifyTimePreset(user.id, notifyAt)
+    const settingsMessage = await getSettingsMessage(user.id)
+
+    await ctx.answerCallbackQuery({ text: message })
+    if (ctx.chat?.id && ctx.callbackQuery?.message?.message_id) {
+      await ctx.api.editMessageText(ctx.chat.id, ctx.callbackQuery.message.message_id, settingsMessage.text, {
+        reply_markup: settingsMessage.replyMarkup,
+      })
+    } else {
+      await ctx.reply(settingsMessage.text, { reply_markup: settingsMessage.replyMarkup })
+    }
+    return
+  }
+
   const menuHandled = await handleMainMenuCallback(ctx, user.id, data)
 
   if (menuHandled) {
@@ -449,6 +502,21 @@ bot.on('message:text', async (ctx, next) => {
 
     if (result.kind === 'updated') {
       await sendUpdatedBirthdayDetail(ctx, user.id, result.birthdayId, result.message)
+      return
+    }
+
+    await ctx.reply(result.message)
+    return
+  }
+
+  if (hasSettingsEditSession(ctx)) {
+    const result = await handleSettingsEditText(ctx, user.id, text)
+
+    if (result.kind === 'updated') {
+      const settingsMessage = await getSettingsMessage(user.id)
+      await ctx.reply([result.message, '', settingsMessage.text].join('\n'), {
+        reply_markup: settingsMessage.replyMarkup,
+      })
       return
     }
 
