@@ -3,7 +3,7 @@ import { InlineKeyboard, type Context } from 'grammy'
 import { prisma } from './db.js'
 import { upsertUserFromContext } from './user.js'
 
-type AddBirthdayDraft = {
+export type AddBirthdayDraft = {
   fullName?: string
   day?: number
   month?: number
@@ -11,11 +11,23 @@ type AddBirthdayDraft = {
   notes?: string | null
 }
 
-type AddBirthdayStep = 'fullName' | 'day' | 'month' | 'birthYear' | 'notes'
+export type AddBirthdayStep = 'fullName' | 'day' | 'month' | 'birthYear' | 'notes'
 
 type AddBirthdaySession = {
   step: AddBirthdayStep
+  history: AddBirthdayStep[]
   draft: AddBirthdayDraft
+}
+
+type AddBirthdayTextResult = {
+  text: string
+  completed: boolean
+  birthdayId?: string
+}
+
+type BackResult = {
+  text: string
+  exited: boolean
 }
 
 const sessions = new Map<string, AddBirthdaySession>()
@@ -103,6 +115,10 @@ function formatBirthdayCreatedMessage(birthday: Birthday): string {
   ].join('\n')
 }
 
+function getBaseBackKeyboard(): InlineKeyboard {
+  return new InlineKeyboard().text('← Назад', 'birthday:add:back')
+}
+
 function getMonthKeyboard(): InlineKeyboard {
   const keyboard = new InlineKeyboard()
 
@@ -114,7 +130,136 @@ function getMonthKeyboard(): InlineKeyboard {
     }
   })
 
+  keyboard.row().text('← Назад', 'birthday:add:back')
+
   return keyboard
+}
+
+function getStepLabel(step: AddBirthdayStep): string {
+  if (step === 'fullName') {
+    return 'Шаг 1 из 5'
+  }
+
+  if (step === 'day') {
+    return 'Шаг 2 из 5'
+  }
+
+  if (step === 'month') {
+    return 'Шаг 3 из 5'
+  }
+
+  if (step === 'birthYear') {
+    return 'Шаг 4 из 5'
+  }
+
+  return 'Шаг 5 из 5'
+}
+
+function formatCurrentValue(step: AddBirthdayStep, draft: AddBirthdayDraft): string | null {
+  if (step === 'fullName') {
+    return draft.fullName ?? null
+  }
+
+  if (step === 'day') {
+    return draft.day === undefined ? null : String(draft.day)
+  }
+
+  if (step === 'month') {
+    if (draft.month === undefined) {
+      return null
+    }
+
+    return monthLabels[draft.month - 1] ?? String(draft.month)
+  }
+
+  if (step === 'birthYear') {
+    if (draft.birthYear === undefined) {
+      return null
+    }
+
+    return draft.birthYear === null ? 'без года' : String(draft.birthYear)
+  }
+
+  if (draft.notes === undefined) {
+    return null
+  }
+
+  return draft.notes === null ? 'без заметки' : draft.notes
+}
+
+function formatCurrentValueLine(step: AddBirthdayStep, draft: AddBirthdayDraft): string | null {
+  const currentValue = formatCurrentValue(step, draft)
+
+  return currentValue ? `Сейчас: ${currentValue}` : null
+}
+
+function renderAddBirthdayStep(session: AddBirthdaySession): string {
+  const currentValueLine = formatCurrentValueLine(session.step, session.draft)
+
+  if (session.step === 'fullName') {
+    return [
+      'Давай добавим день рождения.',
+      '',
+      `${getStepLabel(session.step)}: как зовут человека?`,
+      'Например: Иван Иванов',
+      ...(currentValueLine ? ['', currentValueLine] : []),
+    ].join('\n')
+  }
+
+  if (session.step === 'day') {
+    return [
+      `${getStepLabel(session.step)}: какого числа день рождения?`,
+      'Отправь число от 1 до 31.',
+      ...(currentValueLine ? ['', currentValueLine] : []),
+      '',
+      formatDraftProgress(session.draft),
+    ].join('\n')
+  }
+
+  if (session.step === 'month') {
+    return [
+      `${getStepLabel(session.step)}: выбери месяц кнопкой ниже.`,
+      'Если удобнее, можешь отправить номер месяца числом от 1 до 12.',
+      ...(currentValueLine ? ['', currentValueLine] : []),
+      '',
+      formatDraftProgress(session.draft),
+    ].join('\n')
+  }
+
+  if (session.step === 'birthYear') {
+    return [
+      `${getStepLabel(session.step)}: укажи год рождения или нажми «Пропустить».`,
+      ...(currentValueLine ? ['', currentValueLine] : []),
+      '',
+      formatDraftProgress(session.draft),
+    ].join('\n')
+  }
+
+  return [
+    `${getStepLabel(session.step)}: добавь заметку или нажми «Пропустить».`,
+    'Например: коллега с прошлой работы, любит звонки, поздравить утром.',
+    ...(currentValueLine ? ['', currentValueLine] : []),
+    '',
+    formatDraftProgress(session.draft),
+  ].join('\n')
+}
+
+function moveToStep(ctx: Context, nextStep: AddBirthdayStep, nextDraft: AddBirthdayDraft): string {
+  const session = getSession(ctx)
+
+  if (!session) {
+    throw new Error('Birthday session is missing')
+  }
+
+  const nextSession: AddBirthdaySession = {
+    step: nextStep,
+    history: [...session.history, session.step],
+    draft: nextDraft,
+  }
+
+  setSession(ctx, nextSession)
+
+  return renderAddBirthdayStep(nextSession)
 }
 
 export function getAddBirthdaySuccessKeyboard(birthdayId: string): InlineKeyboard {
@@ -127,17 +272,15 @@ export function getAddBirthdaySuccessKeyboard(birthdayId: string): InlineKeyboar
 }
 
 export function beginAddBirthdayFlow(ctx: Context): string {
-  setSession(ctx, {
+  const session: AddBirthdaySession = {
     step: 'fullName',
+    history: [],
     draft: {},
-  })
+  }
 
-  return [
-    'Давай добавим день рождения.',
-    '',
-    'Шаг 1 из 5: как зовут человека?',
-    'Например: Иван Иванов',
-  ].join('\n')
+  setSession(ctx, session)
+
+  return renderAddBirthdayStep(session)
 }
 
 export function isAddBirthdayFlowActive(ctx: Context): boolean {
@@ -160,10 +303,13 @@ export function getAddBirthdayOptionalKeyboard(ctx: Context): InlineKeyboard | n
   }
 
   if (session.step === 'birthYear' || session.step === 'notes') {
-    return new InlineKeyboard().text('Пропустить', 'birthday:add:skip')
+    return new InlineKeyboard()
+      .text('Пропустить', 'birthday:add:skip')
+      .row()
+      .text('← Назад', 'birthday:add:back')
   }
 
-  return null
+  return getBaseBackKeyboard()
 }
 
 export function canSkipAddBirthdayStep(ctx: Context): boolean {
@@ -215,7 +361,7 @@ async function finishAddBirthdayFlow(ctx: Context, draftOverride?: AddBirthdayDr
   }
 }
 
-export async function skipAddBirthdayStep(ctx: Context): Promise<{ text: string; completed: boolean; birthdayId?: string }> {
+export async function skipAddBirthdayStep(ctx: Context): Promise<AddBirthdayTextResult> {
   const session = getSession(ctx)
 
   if (!session) {
@@ -231,19 +377,8 @@ export async function skipAddBirthdayStep(ctx: Context): Promise<{ text: string;
       birthYear: null,
     }
 
-    setSession(ctx, {
-      step: 'notes',
-      draft: updatedDraft,
-    })
-
     return {
-      text: [
-        'Шаг 5 из 5: добавь заметку или нажми «Пропустить».',
-        '',
-        'Например: коллега с прошлой работы, любит звонки, поздравить утром.',
-        '',
-        formatDraftProgress(updatedDraft),
-      ].join('\n'),
+      text: moveToStep(ctx, 'notes', updatedDraft),
       completed: false,
     }
   }
@@ -283,22 +418,48 @@ export function selectAddBirthdayMonth(ctx: Context, month: number): string {
     month,
   }
 
-  setSession(ctx, {
-    step: 'birthYear',
-    draft: updatedDraft,
-  })
+  return moveToStep(ctx, 'birthYear', updatedDraft)
+}
 
-  return [
-    'Шаг 4 из 5: укажи год рождения или нажми «Пропустить».',
-    '',
-    formatDraftProgress(updatedDraft),
-  ].join('\n')
+export function goBackAddBirthdayStep(ctx: Context): BackResult {
+  const session = getSession(ctx)
+
+  if (!session) {
+    return {
+      text: 'Сейчас возвращаться некуда.',
+      exited: false,
+    }
+  }
+
+  const previousStep = session.history.at(-1)
+
+  if (!previousStep) {
+    clearSession(ctx)
+
+    return {
+      text: 'Возвращаю в главное меню.',
+      exited: true,
+    }
+  }
+
+  const previousSession: AddBirthdaySession = {
+    step: previousStep,
+    history: session.history.slice(0, -1),
+    draft: session.draft,
+  }
+
+  setSession(ctx, previousSession)
+
+  return {
+    text: renderAddBirthdayStep(previousSession),
+    exited: false,
+  }
 }
 
 export async function handleAddBirthdayText(
   ctx: Context,
   text: string,
-): Promise<{ text: string; completed: boolean; birthdayId?: string }> {
+): Promise<AddBirthdayTextResult> {
   const session = getSession(ctx)
 
   if (!session) {
@@ -323,18 +484,8 @@ export async function handleAddBirthdayText(
       fullName,
     }
 
-    setSession(ctx, {
-      step: 'day',
-      draft: updatedDraft,
-    })
-
     return {
-      text: [
-        'Шаг 2 из 5: какого числа день рождения?',
-        'Отправь число от 1 до 31.',
-        '',
-        formatDraftProgress(updatedDraft),
-      ].join('\n'),
+      text: moveToStep(ctx, 'day', updatedDraft),
       completed: false,
     }
   }
@@ -354,18 +505,8 @@ export async function handleAddBirthdayText(
       day,
     }
 
-    setSession(ctx, {
-      step: 'month',
-      draft: updatedDraft,
-    })
-
     return {
-      text: [
-        'Шаг 3 из 5: выбери месяц кнопкой ниже.',
-        'Если удобнее, можешь отправить номер месяца числом от 1 до 12.',
-        '',
-        formatDraftProgress(updatedDraft),
-      ].join('\n'),
+      text: moveToStep(ctx, 'month', updatedDraft),
       completed: false,
     }
   }
@@ -385,17 +526,8 @@ export async function handleAddBirthdayText(
       month,
     }
 
-    setSession(ctx, {
-      step: 'birthYear',
-      draft: updatedDraft,
-    })
-
     return {
-      text: [
-        'Шаг 4 из 5: укажи год рождения или нажми «Пропустить».',
-        '',
-        formatDraftProgress(updatedDraft),
-      ].join('\n'),
+      text: moveToStep(ctx, 'birthYear', updatedDraft),
       completed: false,
     }
   }
@@ -419,18 +551,8 @@ export async function handleAddBirthdayText(
       birthYear,
     }
 
-    setSession(ctx, {
-      step: 'notes',
-      draft: updatedDraft,
-    })
-
     return {
-      text: [
-        'Шаг 5 из 5: добавь заметку или нажми «Пропустить».',
-        'Например: коллега с прошлой работы, любит звонки, поздравить утром.',
-        '',
-        formatDraftProgress(updatedDraft),
-      ].join('\n'),
+      text: moveToStep(ctx, 'notes', updatedDraft),
       completed: false,
     }
   }
