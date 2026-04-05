@@ -11,11 +11,11 @@
       <stop stop-color="#7C5CFF" stop-opacity="0.44"/>
       <stop offset="1" stop-color="#7C5CFF" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="glowRight" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1040 214) rotate(145) scale(250 170)">
+    <radialGradient id="glowRight" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1092 214) rotate(145) scale(250 170)">
       <stop stop-color="#3AB8FF" stop-opacity="0.28"/>
       <stop offset="1" stop-color="#3AB8FF" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="accent" x1="304" y1="76" x2="1092" y2="340" gradientUnits="userSpaceOnUse">
+    <linearGradient id="accent" x1="304" y1="76" x2="1148" y2="340" gradientUnits="userSpaceOnUse">
       <stop stop-color="#A58CFF"/>
       <stop offset="0.55" stop-color="#79AFFF"/>
       <stop offset="1" stop-color="#BDF5FF"/>
@@ -45,15 +45,15 @@
     <circle cx="1106" cy="90" r="2" fill="#B8E8FF"/>
     <circle cx="1138" cy="132" r="1.6" fill="#FFFFFF"/>
     <circle cx="210" cy="334" r="1.5" fill="#FFFFFF"/>
-    <circle cx="1014" cy="340" r="2.5" fill="#D9CBFF"/>
+    <circle cx="1090" cy="340" r="2.5" fill="#D9CBFF"/>
     <circle cx="328" cy="358" r="2" fill="#B8E8FF"/>
   </g>
 
   <g opacity="0.28">
-    <ellipse cx="1018" cy="142" rx="156" ry="60" transform="rotate(-15 1018 142)" stroke="url(#accent)" stroke-width="2"/>
-    <ellipse cx="982" cy="174" rx="228" ry="96" transform="rotate(-15 982 174)" stroke="url(#accent)" stroke-width="1.5"/>
-    <ellipse cx="1048" cy="286" rx="176" ry="70" transform="rotate(12 1048 286)" stroke="url(#accent)" stroke-width="2"/>
-    <path d="M808 330C880 294 965 274 1070 270" stroke="url(#accent)" stroke-width="1.5" stroke-linecap="round" opacity="0.75"/>
+    <ellipse cx="1094" cy="142" rx="156" ry="60" transform="rotate(-15 1018 142)" stroke="url(#accent)" stroke-width="2"/>
+    <ellipse cx="1058" cy="174" rx="228" ry="96" transform="rotate(-15 982 174)" stroke="url(#accent)" stroke-width="1.5"/>
+    <ellipse cx="1124" cy="286" rx="176" ry="70" transform="rotate(12 1048 286)" stroke="url(#accent)" stroke-width="2"/>
+    <path d="M860 330C930 294 1015 274 1140 270" stroke="url(#accent)" stroke-width="1.5" stroke-linecap="round" opacity="0.75"/>
   </g>
 
   <g>
@@ -71,11 +71,11 @@
   </g>
 
   <g>
-    <circle cx="1000" cy="206" r="76" fill="url(#iconCore)" opacity="0.9"/>
-    <circle cx="1000" cy="206" r="18" fill="#FFFFFF" opacity="0.96"/>
-    <circle cx="1000" cy="206" r="46" stroke="url(#iconStroke)" stroke-width="2.5" opacity="0.82"/>
-    <ellipse cx="1000" cy="206" rx="102" ry="40" transform="rotate(-18 1000 206)" stroke="url(#iconStroke)" stroke-width="2.5" opacity="0.92"/>
-    <circle cx="1092" cy="174" r="6" fill="#BDF5FF"/>
-    <path d="M932 116L938 130L952 136L938 142L932 156L926 142L912 136L926 130L932 116Z" fill="#FFFFFF" opacity="0.95"/>
+    <circle cx="1106" cy="206" r="76" fill="url(#iconCore)" opacity="0.9"/>
+    <circle cx="1106" cy="206" r="18" fill="#FFFFFF" opacity="0.96"/>
+    <circle cx="1106" cy="206" r="46" stroke="url(#iconStroke)" stroke-width="2.5" opacity="0.82"/>
+    <ellipse cx="1106" cy="206" rx="102" ry="40" transform="rotate(-18 1000 206)" stroke="url(#iconStroke)" stroke-width="2.5" opacity="0.92"/>
+    <circle cx="1198" cy="174" r="6" fill="#BDF5FF"/>
+    <path d="M1038 116L1044 130L1058 136L1044 142L1038 156L1032 142L1018 136L1032 130L1038 116Z" fill="#FFFFFF" opacity="0.95"/>
   </g>
 </svg>
