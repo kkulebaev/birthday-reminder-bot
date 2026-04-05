@@ -10,23 +10,36 @@
 
 > A calm Telegram-first assistant for remembering important birthdays and important dates.
 
-## Current status
+Birthday Reminder Bot — Lumen helps you keep important birthdays in one place and reminds you about them at the right time.
 
-Working beta foundation:
-- TypeScript project setup
-- grammY bot bootstrap
-- Prisma schema and Postgres migration
-- CRUD-style Telegram commands for birthday records
-- Webhook-based Telegram delivery
-- Scheduler entrypoint for birthday notifications
-- Delivery logging via `delivery_logs`
-- Test notification command
+## What it does
 
-## Available bot commands
+- helps you save birthdays in a simple Telegram flow
+- shows upcoming birthdays in one main screen
+- lets you quickly open and edit each birthday card
+- sends reminders on the birthday itself
+- supports per-user notification time and timezone settings
+
+## Main flows
+
+### Add a birthday
+Use `/add` or open `/menu` and follow the step-by-step flow.
+
+### Check upcoming birthdays
+Use `/upcoming` to see the nearest important dates and open any birthday card from there.
+
+### Find a person quickly
+Use `/search <name>` to find a birthday card by name.
+
+### Manage reminder settings
+Open `/menu` → `⚙️ Настройки` to update your timezone, notification time, or reminder preferences.
+
+## Main commands
 
 - `/start`
-- `/help`
+- `/menu`
 - `/add`
+- `/upcoming`
 - `/search <name>`
 - `/view <name>`
 - `/note <name> | <text>`
@@ -34,75 +47,28 @@ Working beta foundation:
 - `/rename <name> | <new name>`
 - `/setdate <name> | <DD.MM or DD.MM.YYYY>`
 - `/delete <name>`
-- `/test_notification`
 - `/cancel`
-- `/ping`
 
-## Current UX notes
+## Product notes
 
 - `/menu` is the main entry point for everyday use
-- add flow is step-by-step, with month buttons and optional skip for year and note
-- after saving a birthday, the bot offers next actions: add another, open the card, open upcoming birthdays, or go home
-- record cards are state-aware: reminder toggle reflects current status, note actions change based on whether a note exists, and note removal is available inline
-- upcoming birthdays screen includes direct navigation to record cards
-- settings screen lets the user review and update timezone and notification time from the main menu, includes quick time presets, timezone presets with manual fallback, and supports toggling notifications on/off
-- birthday notifications include inline actions to open the record card or disable reminders directly from the notification
+- `/upcoming` is the primary list screen
+- birthday cards support quick actions like edit, delete, and reminder toggle
+- reminders include inline actions to open the card or disable reminders directly
+- settings support timezone presets, manual timezone entry, quick time presets, and notification toggle
 
-## Stack
+## Development
 
-- TypeScript
-- Node.js
-- grammY
-- Express
-- Prisma
-- Postgres
+See `.env.example` for environment variables.
 
-## Domain model
-
-- `users`
-- `user_settings`
-- `birthdays`
-- `delivery_logs`
-
-## Environment variables
-
-See `.env.example`.
-
-Webhook-related variables:
-- `TELEGRAM_WEBHOOK_PATH` — optional, defaults to `/telegram/webhook`
-- `PORT` — server port, provided by the platform
-
-## Scripts
-
+Available scripts:
 - `npm run dev`
 - `npm run build`
 - `npm run start`
 - `npm run scheduler`
 - `npm run typecheck`
 - `npm run lint`
+- `npm run test`
 - `npm run prisma:generate`
 - `npm run prisma:migrate:dev`
 - `npm run prisma:migrate:deploy`
-
-## CI
-
-GitHub Actions runs separate workflows on push and pull request:
-- `lint` → `npm run prisma:generate` + `npm run lint`
-- `typecheck` → `npm run prisma:generate` + `npm run typecheck`
-- `test` → `npm run prisma:generate` + `npm run test`
-
-## Webhook notes
-
-The bot now runs in webhook mode:
-- app exposes a POST endpoint for Telegram updates
-- webhook endpoint is served by the app, but Telegram webhook registration is done manually
-- scheduler remains a separate process/command
-
-## Scheduler notes
-
-Current scheduler behavior:
-- checks birthdays for today in each user's configured timezone
-- respects `notify_at` as a "not earlier than" threshold
-- sends notifications through the same Telegram bot
-- writes delivery status into `delivery_logs`
-- prevents duplicate successful sends for the same birthday and occurrence date
