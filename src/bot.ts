@@ -7,6 +7,7 @@ import {
   canSkipAddBirthdayStep,
   getAddBirthdayOptionalKeyboard,
   getAddBirthdaySuccessKeyboard,
+  goBackAddBirthdayStep,
   handleAddBirthdayText,
   isAddBirthdayFlowActive,
   selectAddBirthdayMonth,
@@ -354,6 +355,24 @@ bot.on('callback_query:data', async (ctx) => {
     return
   }
 
+
+  if (data === 'birthday:add:back') {
+    if (!isAddBirthdayFlowActive(ctx)) {
+      await ctx.answerCallbackQuery({ text: 'Сейчас возвращаться некуда' })
+      return
+    }
+
+    const result = goBackAddBirthdayStep(ctx)
+    await ctx.answerCallbackQuery({ text: result.exited ? 'Открываю меню' : 'Возвращаю назад' })
+
+    if (result.exited) {
+      await sendMainMenu(ctx)
+      return
+    }
+
+    await replyWithOptionalKeyboard(ctx, result.text)
+    return
+  }
 
   if (data.startsWith('birthday:add:month:')) {
     if (!canPickAddBirthdayMonth(ctx)) {
