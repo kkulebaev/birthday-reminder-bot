@@ -4,7 +4,7 @@ import { getHomeButtonKeyboard, getMainMenuKeyboard, getMainMenuText } from '../
 describe('main menu', () => {
   it('returns richer main menu text', () => {
     expect(getMainMenuText()).toBe([
-      '🎂 Birthday Reminder Bot',
+      '🎂 Birthday Reminder Bot — Lumen',
       '',
       'Я помогу не забыть важные даты.',
       'Выбери, что хочешь сделать дальше.',

@@ -10,7 +10,7 @@ export function formatStartMessage(input: StartMessageInput): string {
   return [
     `Привет, ${name} ✨`,
     '',
-    'Я помогу хранить дни рождения и присылать напоминания сюда же в Telegram.',
+    'Я Birthday Reminder Bot — Lumen. Помогу хранить дни рождения и вовремя присылать напоминания сюда же в Telegram.',
     '',
     'Начни с /menu — там основные действия.',
     '',

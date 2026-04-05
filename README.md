@@ -1,6 +1,6 @@
-# birthday-reminder-bot
+# Birthday Reminder Bot — Lumen
 
-Telegram-first birthday reminder bot.
+Telegram-first birthday reminder bot with a friendly product personality.
 
 ## Current status
 

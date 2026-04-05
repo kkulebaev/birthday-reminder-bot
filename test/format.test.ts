@@ -10,6 +10,7 @@ describe('formatStartMessage', () => {
     })
 
     expect(result).toContain('Привет, Костя ✨')
+    expect(result).toContain('Я Birthday Reminder Bot — Lumen.')
     expect(result).toContain('Начни с /menu — там основные действия.')
     expect(result).toContain('• Часовой пояс: Europe/Moscow')
     expect(result).toContain('• Время уведомления: 09:00')

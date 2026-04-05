@@ -6,7 +6,7 @@ import { getUpcomingBirthdaysMessage } from './upcoming-birthdays.js'
 
 export function getMainMenuText(): string {
   return [
-    '🎂 Birthday Reminder Bot',
+    '🎂 Birthday Reminder Bot — Lumen',
     '',
     'Я помогу не забыть важные даты.',
     'Выбери, что хочешь сделать дальше.',
