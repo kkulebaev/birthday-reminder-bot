@@ -73,27 +73,43 @@ export function isSkipValue(value: string): boolean {
     || normalized === 'нет'
 }
 
+function formatDatePreview(draft: AddBirthdayDraft): string {
+  const day = draft.day ? String(draft.day).padStart(2, '0') : '—'
+  const month = draft.month ? String(draft.month).padStart(2, '0') : '—'
+  const year = draft.birthYear ? `.${draft.birthYear}` : ''
+
+  return `${day}.${month}${year}`
+}
+
+function formatDraftProgress(draft: AddBirthdayDraft): string {
+  return [
+    `Имя: ${draft.fullName ?? '—'}`,
+    `Дата: ${formatDatePreview(draft)}`,
+    `Заметка: ${draft.notes ?? '—'}`,
+  ].join('\n')
+}
+
 function formatBirthdayCreatedMessage(birthday: Birthday): string {
   const month = String(birthday.month).padStart(2, '0')
   const day = String(birthday.day).padStart(2, '0')
   const year = birthday.birthYear ? `.${birthday.birthYear}` : ''
   const notes = birthday.notes ? `\nЗаметка: ${birthday.notes}` : ''
 
-  return `Сохранил: ${birthday.fullName}\nДата: ${day}.${month}${year}${notes}`
+  return [
+    `Готово, сохранил запись для ${birthday.fullName}.`,
+    '',
+    `Дата: ${day}.${month}${year}`,
+    notes ? `Заметка: ${birthday.notes}` : 'Заметка: —',
+  ].join('\n')
 }
 
 function formatDraftSummary(draft: AddBirthdayDraft): string {
-  const day = draft.day ? String(draft.day).padStart(2, '0') : '—'
-  const month = draft.month ? String(draft.month).padStart(2, '0') : '—'
-  const year = draft.birthYear ? `.${draft.birthYear}` : ''
-  const notes = draft.notes ? draft.notes : '—'
-
   return [
     'Проверь перед сохранением:',
     '',
-    `Имя: ${draft.fullName ?? '—'}`,
-    `Дата: ${day}.${month}${year}`,
-    `Заметка: ${notes}`,
+    formatDraftProgress(draft),
+    '',
+    'Если всё верно, нажми «Сохранить».',
   ].join('\n')
 }
 
@@ -117,6 +133,15 @@ function getConfirmKeyboard(): InlineKeyboard {
     .text('❌ Отмена', 'birthday:add:cancel')
 }
 
+export function getAddBirthdaySuccessKeyboard(birthdayId: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text('➕ Добавить ещё', 'menu:add')
+    .text('🎂 Открыть карточку', `birthday:view:${birthdayId}`)
+    .row()
+    .text('📋 Открыть список', 'menu:list')
+    .text('🏠 Главное меню', 'menu:home')
+}
+
 export function beginAddBirthdayFlow(ctx: Context): string {
   setSession(ctx, {
     step: 'fullName',
@@ -126,7 +151,7 @@ export function beginAddBirthdayFlow(ctx: Context): string {
   return [
     'Давай добавим день рождения.',
     '',
-    'Шаг 1 из 5: отправь Full Name.',
+    'Шаг 1 из 5: как зовут человека?',
     'Например: Иван Иванов',
   ].join('\n')
 }
@@ -204,7 +229,16 @@ export async function skipAddBirthdayStep(ctx: Context): Promise<string> {
       },
     })
 
-    return 'Шаг 5 из 5: отправь заметку или нажми «Пропустить».'
+    return [
+      'Шаг 5 из 5: добавь заметку или нажми «Пропустить».',
+      '',
+      'Например: коллега с прошлой работы, любит звонки, поздравить утром.',
+      '',
+      formatDraftProgress({
+        ...session.draft,
+        birthYear: null,
+      }),
+    ].join('\n')
   }
 
   if (session.step === 'notes') {
@@ -228,22 +262,31 @@ export function selectAddBirthdayMonth(ctx: Context, month: number): string {
     return 'Месяц должен быть от 1 до 12.'
   }
 
+  const updatedDraft = {
+    ...session.draft,
+    month,
+  }
+
   setSession(ctx, {
     step: 'birthYear',
-    draft: {
-      ...session.draft,
-      month,
-    },
+    draft: updatedDraft,
   })
 
-  return 'Шаг 4 из 5: отправь год рождения числом или нажми «Пропустить». '
+  return [
+    'Шаг 4 из 5: укажи год рождения или нажми «Пропустить».',
+    '',
+    formatDraftProgress(updatedDraft),
+  ].join('\n')
 }
 
-async function finishAddBirthdayFlow(ctx: Context): Promise<string> {
+async function finishAddBirthdayFlow(ctx: Context): Promise<{ text: string; birthdayId: string }> {
   const session = getSession(ctx)
 
   if (!session) {
-    return 'Сейчас wizard не активен.'
+    return {
+      text: 'Сейчас wizard не активен.',
+      birthdayId: '',
+    }
   }
 
   const user = await upsertUserFromContext(ctx)
@@ -267,14 +310,20 @@ async function finishAddBirthdayFlow(ctx: Context): Promise<string> {
 
   clearSession(ctx)
 
-  return formatBirthdayCreatedMessage(birthday)
+  return {
+    text: formatBirthdayCreatedMessage(birthday),
+    birthdayId: birthday.id,
+  }
 }
 
-export async function confirmAddBirthdayFlow(ctx: Context): Promise<string> {
+export async function confirmAddBirthdayFlow(ctx: Context): Promise<{ text: string; birthdayId: string }> {
   const session = getSession(ctx)
 
   if (!session || session.step !== 'confirm') {
-    return 'Сейчас нечего сохранять.'
+    return {
+      text: 'Сейчас нечего сохранять.',
+      birthdayId: '',
+    }
   }
 
   return finishAddBirthdayFlow(ctx)
@@ -295,21 +344,28 @@ export async function handleAddBirthdayText(ctx: Context, text: string): Promise
 
     if (!fullName) {
       return {
-        text: 'Не вижу имени. Отправь Full Name текстом.',
+        text: 'Не вижу имени. Напиши имя человека одним сообщением.',
         completed: false,
       }
     }
 
+    const updatedDraft = {
+      ...session.draft,
+      fullName,
+    }
+
     setSession(ctx, {
       step: 'day',
-      draft: {
-        ...session.draft,
-        fullName,
-      },
+      draft: updatedDraft,
     })
 
     return {
-      text: 'Шаг 2 из 5: отправь день месяца числом от 1 до 31.',
+      text: [
+        'Шаг 2 из 5: в какой день день рождения?',
+        'Отправь число от 1 до 31.',
+        '',
+        formatDraftProgress(updatedDraft),
+      ].join('\n'),
       completed: false,
     }
   }
@@ -324,16 +380,23 @@ export async function handleAddBirthdayText(ctx: Context, text: string): Promise
       }
     }
 
+    const updatedDraft = {
+      ...session.draft,
+      day,
+    }
+
     setSession(ctx, {
       step: 'month',
-      draft: {
-        ...session.draft,
-        day,
-      },
+      draft: updatedDraft,
     })
 
     return {
-      text: 'Шаг 3 из 5: выбери месяц кнопкой ниже или отправь номер месяца числом от 1 до 12.',
+      text: [
+        'Шаг 3 из 5: выбери месяц кнопкой ниже.',
+        'Если удобнее, можешь отправить номер месяца числом от 1 до 12.',
+        '',
+        formatDraftProgress(updatedDraft),
+      ].join('\n'),
       completed: false,
     }
   }
@@ -348,16 +411,22 @@ export async function handleAddBirthdayText(ctx: Context, text: string): Promise
       }
     }
 
+    const updatedDraft = {
+      ...session.draft,
+      month,
+    }
+
     setSession(ctx, {
       step: 'birthYear',
-      draft: {
-        ...session.draft,
-        month,
-      },
+      draft: updatedDraft,
     })
 
     return {
-      text: 'Шаг 4 из 5: отправь год рождения числом или нажми «Пропустить».',
+      text: [
+        'Шаг 4 из 5: укажи год рождения или нажми «Пропустить».',
+        '',
+        formatDraftProgress(updatedDraft),
+      ].join('\n'),
       completed: false,
     }
   }
@@ -379,16 +448,23 @@ export async function handleAddBirthdayText(ctx: Context, text: string): Promise
       }
     }
 
+    const updatedDraft = {
+      ...session.draft,
+      birthYear,
+    }
+
     setSession(ctx, {
       step: 'notes',
-      draft: {
-        ...session.draft,
-        birthYear,
-      },
+      draft: updatedDraft,
     })
 
     return {
-      text: 'Шаг 5 из 5: отправь заметку или нажми «Пропустить».',
+      text: [
+        'Шаг 5 из 5: добавь заметку или нажми «Пропустить».',
+        'Например: коллега с прошлой работы, любит звонки, поздравить утром.',
+        '',
+        formatDraftProgress(updatedDraft),
+      ].join('\n'),
       completed: false,
     }
   }

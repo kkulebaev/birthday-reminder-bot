@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  getAddBirthdaySuccessKeyboard,
   isSkipValue,
   monthLabels,
   parseInteger,
@@ -54,5 +55,13 @@ describe('add birthday helpers', () => {
     expect(monthLabels).toHaveLength(12)
     expect(monthLabels[0]).toBe('Янв')
     expect(monthLabels[11]).toBe('Дек')
+  })
+
+  it('builds success keyboard with next actions', () => {
+    const keyboard = getAddBirthdaySuccessKeyboard('b1')
+
+    expect(keyboard.inline_keyboard[0]?.map((button) => button.text)).toEqual(['➕ Добавить ещё', '🎂 Открыть карточку'])
+    expect(keyboard.inline_keyboard[1]?.map((button) => button.text)).toEqual(['📋 Открыть список', '🏠 Главное меню'])
+    expect(keyboard.inline_keyboard[0]?.[1]?.callback_data).toBe('birthday:view:b1')
   })
 })

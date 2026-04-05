@@ -8,6 +8,7 @@ import {
   canSkipAddBirthdayStep,
   confirmAddBirthdayFlow,
   getAddBirthdayOptionalKeyboard,
+  getAddBirthdaySuccessKeyboard,
   handleAddBirthdayText,
   isAddBirthdayFlowActive,
   selectAddBirthdayMonth,
@@ -360,8 +361,16 @@ bot.on('callback_query:data', async (ctx) => {
     }
 
     await ctx.answerCallbackQuery({ text: 'Сохраняю' })
-    await ctx.reply(await confirmAddBirthdayFlow(ctx))
-    await sendMainMenu(ctx)
+    const result = await confirmAddBirthdayFlow(ctx)
+
+    if (result.birthdayId) {
+      await ctx.reply(result.text, {
+        reply_markup: getAddBirthdaySuccessKeyboard(result.birthdayId),
+      })
+    } else {
+      await ctx.reply(result.text)
+      await sendMainMenu(ctx)
+    }
     return
   }
 

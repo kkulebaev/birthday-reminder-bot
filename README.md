@@ -31,6 +31,13 @@ Working beta foundation:
 - `/cancel`
 - `/ping`
 
+## Current UX notes
+
+- `/menu` is the main entry point for everyday use
+- add flow is step-by-step, with month buttons and optional skip for year and note
+- after saving a birthday, the bot offers next actions: add another, open the card, open the list, or go home
+- record cards are state-aware: reminder toggle reflects current status, note actions change based on whether a note exists, and note removal is available inline
+
 ## Stack
 
 - TypeScript
