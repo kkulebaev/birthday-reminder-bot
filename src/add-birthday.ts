@@ -361,7 +361,7 @@ export async function handleAddBirthdayText(ctx: Context, text: string): Promise
 
     return {
       text: [
-        'Шаг 2 из 5: в какой день день рождения?',
+        'Шаг 2 из 5: какого числа день рождения?',
         'Отправь число от 1 до 31.',
         '',
         formatDraftProgress(updatedDraft),
