@@ -1,3 +1,5 @@
+![Birthday Reminder Bot — Lumen](./assets/banner.svg)
+
 # 🎂 Birthday Reminder Bot — Lumen
 
 [![Test](https://github.com/kkulebaev/birthday-reminder-bot/actions/workflows/test.yml/badge.svg)](https://github.com/kkulebaev/birthday-reminder-bot/actions/workflows/test.yml)
