@@ -61,7 +61,7 @@ describe('add birthday helpers', () => {
     const keyboard = getAddBirthdaySuccessKeyboard('b1')
 
     expect(keyboard.inline_keyboard[0]?.map((button) => button.text)).toEqual(['➕ Добавить ещё', '🎂 Открыть карточку'])
-    expect(keyboard.inline_keyboard[1]?.map((button) => button.text)).toEqual(['📋 Открыть список', '🏠 Главное меню'])
+    expect(keyboard.inline_keyboard[1]?.map((button) => button.text)).toEqual(['🎈 Ближайшие', '🏠 Главное меню'])
     expect(keyboard.inline_keyboard[0]?.[1]?.callback_data).toBe('birthday:view:b1')
   })
 })

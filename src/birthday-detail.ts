@@ -58,30 +58,6 @@ function getActionPrompt(action: BirthdayAction): string {
   return 'Выбери нужную запись ниже.'
 }
 
-function getActionLabel(action: BirthdayAction): string {
-  if (action === 'note') {
-    return 'Заметка'
-  }
-
-  if (action === 'toggle') {
-    return 'Напоминания'
-  }
-
-  if (action === 'delete') {
-    return 'Удалить'
-  }
-
-  if (action === 'rename') {
-    return 'Переименовать'
-  }
-
-  if (action === 'setdate') {
-    return 'Изменить дату'
-  }
-
-  return 'Открыть'
-}
-
 function createActionSelectionKeyboard(
   birthdays: Birthday[],
   action: BirthdayAction,
@@ -99,6 +75,14 @@ function createActionSelectionKeyboard(
   keyboard.text('🏠 Главное меню', 'menu:home')
 
   return keyboard
+}
+
+function createNotFoundKeyboard(): InlineKeyboard {
+  return new InlineKeyboard()
+    .text('➕ Добавить', 'menu:add')
+    .text('🎈 Ближайшие', 'menu:upcoming')
+    .row()
+    .text('🏠 Главное меню', 'menu:home')
 }
 
 export async function findBirthdays(userId: string, query: string): Promise<Birthday[]> {
@@ -131,11 +115,7 @@ export function resolveBirthdayAction(
         '',
         'Попробуй другой запрос или добавь новую запись.',
       ].join('\n'),
-      replyMarkup: new InlineKeyboard()
-        .text('➕ Добавить', 'menu:add')
-        .text('📋 Открыть список', 'menu:list')
-        .row()
-        .text('🏠 Главное меню', 'menu:home'),
+      replyMarkup: createNotFoundKeyboard(),
     }
   }
 
@@ -161,11 +141,7 @@ export function resolveBirthdayAction(
         '',
         'Попробуй другой запрос или добавь новую запись.',
       ].join('\n'),
-      replyMarkup: new InlineKeyboard()
-        .text('➕ Добавить', 'menu:add')
-        .text('📋 Открыть список', 'menu:list')
-        .row()
-        .text('🏠 Главное меню', 'menu:home'),
+      replyMarkup: createNotFoundKeyboard(),
     }
   }
 
@@ -436,8 +412,4 @@ export function getBirthdayActionSelectionMessage(action: BirthdayAction, query:
     '',
     getActionPrompt(action),
   ].join('\n')
-}
-
-export function getBirthdayActionLabel(action: BirthdayAction): string {
-  return getActionLabel(action)
 }

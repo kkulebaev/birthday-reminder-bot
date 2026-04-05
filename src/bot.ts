@@ -35,7 +35,6 @@ import {
 import { cancelInlineEdit, handleInlineEditText, hasInlineEditSession } from './birthday-inline-edit.js'
 import { formatStartMessage } from './format.js'
 import { formatHelpMessage } from './help.js'
-import { getBirthdayListMessage } from './list-birthdays.js'
 import { sendMainMenu, handleMainMenuCallback } from './main-menu.js'
 import { notificationBot } from './notification-bot.js'
 import { getBirthdaySearchResult } from './search-birthdays.js'
@@ -184,24 +183,6 @@ bot.command('add', async (ctx) => {
 
   await upsertUserFromContext(ctx)
   await ctx.reply(beginAddBirthdayFlow(ctx))
-})
-
-bot.command('list', async (ctx) => {
-  if (!isPrivateChat(ctx)) {
-    return
-  }
-
-  const user = await upsertUserFromContext(ctx)
-  const result = await getBirthdayListMessage(user.id)
-
-  if (result.replyMarkup) {
-    await ctx.reply(result.text, {
-      reply_markup: result.replyMarkup,
-    })
-    return
-  }
-
-  await ctx.reply(result.text)
 })
 
 bot.command('upcoming', async (ctx) => {

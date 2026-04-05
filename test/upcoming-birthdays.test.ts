@@ -79,7 +79,7 @@ describe('upcoming birthdays logic', () => {
     const keyboard = createEmptyUpcomingKeyboard()
 
     expect(keyboard.inline_keyboard[0]?.[0]?.text).toBe('➕ Добавить первую запись')
-    expect(keyboard.inline_keyboard[1]?.map((button) => button.text)).toEqual(['📋 Открыть список', '🏠 Главное меню'])
+    expect(keyboard.inline_keyboard[1]?.map((button) => button.text)).toEqual(['🏠 Главное меню'])
   })
 
   it('builds upcoming keyboard with direct links to birthday cards', () => {
@@ -103,6 +103,7 @@ describe('upcoming birthdays logic', () => {
     expect(keyboard.inline_keyboard[0]?.[0]?.text).toBe('Иван Иванов — 04.04')
     expect(keyboard.inline_keyboard[0]?.[0]?.callback_data).toBe('birthday:view:b1')
     expect(keyboard.inline_keyboard[1]?.[0]?.text).toBe('Мария Петрова — 10.04')
-    expect(keyboard.inline_keyboard[2]?.map((button) => button.text)).toEqual(['➕ Добавить', '📋 Список'])
+    expect(keyboard.inline_keyboard[2]?.map((button) => button.text)).toEqual(['➕ Добавить', '⚙️ Настройки'])
+    expect(keyboard.inline_keyboard[3]?.map((button) => button.text)).toEqual(['🏠 Главное меню'])
   })
 })

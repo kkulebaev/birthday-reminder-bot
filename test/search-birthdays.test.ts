@@ -40,6 +40,6 @@ describe('search birthdays helpers', () => {
     const keyboard = createEmptySearchKeyboard('Иван')
 
     expect(keyboard.inline_keyboard[0]?.[0]?.text).toBe('➕ Добавить «Иван»')
-    expect(keyboard.inline_keyboard[1]?.map((button) => button.text)).toEqual(['📋 Открыть список', '🏠 Главное меню'])
+    expect(keyboard.inline_keyboard[1]?.map((button) => button.text)).toEqual(['🎈 Ближайшие', '🏠 Главное меню'])
   })
 })

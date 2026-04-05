@@ -44,7 +44,7 @@ describe('birthday action disambiguation', () => {
 
     expect(result.text).toContain('Ничего не нашёл по запросу: анна')
     expect(result.text).toContain('Попробуй другой запрос или добавь новую запись.')
-    expect(result.replyMarkup.inline_keyboard[0]?.map((button) => button.text)).toEqual(['➕ Добавить', '📋 Открыть список'])
+    expect(result.replyMarkup.inline_keyboard[0]?.map((button) => button.text)).toEqual(['➕ Добавить', '🎈 Ближайшие'])
   })
 
   it('returns single result when only one birthday matches', () => {

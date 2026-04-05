@@ -138,7 +138,7 @@ export function getAddBirthdaySuccessKeyboard(birthdayId: string): InlineKeyboar
     .text('➕ Добавить ещё', 'menu:add')
     .text('🎂 Открыть карточку', `birthday:view:${birthdayId}`)
     .row()
-    .text('📋 Открыть список', 'menu:list')
+    .text('🎈 Ближайшие', 'menu:upcoming')
     .text('🏠 Главное меню', 'menu:home')
 }
 

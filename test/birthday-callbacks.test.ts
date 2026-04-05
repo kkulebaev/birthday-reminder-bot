@@ -27,11 +27,14 @@ describe('birthday callbacks ui', () => {
     expect(result).toContain('Заметка: —')
   })
 
-  it('builds detail keyboard with delete action', () => {
-    const keyboard = getDetailKeyboard(record.id)
+  it('builds detail keyboard around upcoming instead of list', () => {
+    const keyboard = getDetailKeyboard(record)
     const inlineKeyboard = keyboard.inline_keyboard
 
-    expect(inlineKeyboard[0]?.map((button) => button.text)).toEqual(['🔔 Напоминания', '🗑 Удалить'])
+    expect(inlineKeyboard[0]?.map((button) => button.text)).toEqual(['🔕 Выключить напоминания'])
+    expect(inlineKeyboard[1]?.map((button) => button.text)).toEqual(['📝 Добавить заметку', '✏️ Имя'])
+    expect(inlineKeyboard[2]?.map((button) => button.text)).toEqual(['📅 Дата'])
+    expect(inlineKeyboard[3]?.map((button) => button.text)).toEqual(['🗑 Удалить', '🎈 Ближайшие'])
   })
 
   it('builds delete confirmation keyboard', () => {

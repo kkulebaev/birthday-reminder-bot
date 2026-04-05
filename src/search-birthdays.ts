@@ -19,7 +19,7 @@ export function createEmptySearchKeyboard(query: string): InlineKeyboard {
   return new InlineKeyboard()
     .text(`➕ Добавить «${query}»`, 'menu:add')
     .row()
-    .text('📋 Открыть список', 'menu:list')
+    .text('🎈 Ближайшие', 'menu:upcoming')
     .text('🏠 Главное меню', 'menu:home')
 }
 

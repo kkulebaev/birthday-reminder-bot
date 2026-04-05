@@ -64,7 +64,6 @@ export function createEmptyUpcomingKeyboard(): InlineKeyboard {
   return new InlineKeyboard()
     .text('➕ Добавить первую запись', 'menu:add')
     .row()
-    .text('📋 Открыть список', 'menu:list')
     .text('🏠 Главное меню', 'menu:home')
 }
 
@@ -77,7 +76,7 @@ export function createUpcomingKeyboard(upcoming: UpcomingBirthday[]): InlineKeyb
 
   keyboard
     .text('➕ Добавить', 'menu:add')
-    .text('📋 Список', 'menu:list')
+    .text('⚙️ Настройки', 'menu:settings')
     .row()
     .text('🏠 Главное меню', 'menu:home')
 
