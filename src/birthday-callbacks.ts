@@ -3,7 +3,7 @@ import { beginInlineEdit } from './birthday-inline-edit.js'
 import { prisma } from './db.js'
 import { getBirthdayListMessage, getListBackKeyboard } from './list-birthdays.js'
 
-type BirthdayRecord = {
+export type BirthdayRecord = {
   id: string
   userId: string
   fullName: string
@@ -32,6 +32,15 @@ export function formatDetailText(record: BirthdayRecord): string {
   ].join('\n')
 }
 
+export function getDeleteConfirmationText(record: BirthdayRecord): string {
+  return [
+    `Удалить запись «${record.fullName}»?`,
+    '',
+    `Дата: ${formatDate(record.day, record.month, record.birthYear)}`,
+    'Запись исчезнет из списка, и напоминания по ней больше не будут приходить.',
+  ].join('\n')
+}
+
 export function getDetailKeyboard(recordId: string): InlineKeyboard {
   return new InlineKeyboard()
     .text('🔔 Напоминания', `birthday:toggle:${recordId}`)
@@ -42,6 +51,14 @@ export function getDetailKeyboard(recordId: string): InlineKeyboard {
     .row()
     .text('📅 Дата', `birthday:edit-date:${recordId}`)
     .text('⬅️ К списку', 'birthday:list')
+    .row()
+    .text('🏠 Главное меню', 'menu:home')
+}
+
+export function getDeleteConfirmationKeyboard(recordId: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text('🗑 Да, удалить', `birthday:confirm-delete:${recordId}`)
+    .text('↩️ Назад', `birthday:view:${recordId}`)
     .row()
     .text('🏠 Главное меню', 'menu:home')
 }
@@ -120,10 +137,38 @@ export async function sendUpdatedBirthdayDetail(ctx: Context, userId: string, bi
   })
 }
 
+export async function promptDeleteConfirmation(ctx: Context, userId: string, birthdayId: string): Promise<boolean> {
+  const record = await getOwnedBirthday(userId, birthdayId)
+
+  if (!record) {
+    return false
+  }
+
+  await ctx.reply(getDeleteConfirmationText(record), {
+    reply_markup: getDeleteConfirmationKeyboard(record.id),
+  })
+
+  return true
+}
+
 export async function handleBirthdayCallback(ctx: Context, userId: string, data: string): Promise<boolean> {
   if (data === 'birthday:list') {
     const result = await getBirthdayListMessage(userId)
     await editCallbackMessage(ctx, result.text, result.replyMarkup)
+    await ctx.answerCallbackQuery()
+    return true
+  }
+
+  if (data.startsWith('birthday:view:')) {
+    const birthdayId = data.replace('birthday:view:', '')
+    const record = await getOwnedBirthday(userId, birthdayId)
+
+    if (!record) {
+      await ctx.answerCallbackQuery({ text: 'Не нашёл запись' })
+      return true
+    }
+
+    await editCallbackMessage(ctx, formatDetailText(record), getDetailKeyboard(record.id))
     await ctx.answerCallbackQuery()
     return true
   }
@@ -170,12 +215,22 @@ export async function handleBirthdayCallback(ctx: Context, userId: string, data:
   }
 
   if (action === 'delete') {
+    await editCallbackMessage(ctx, getDeleteConfirmationText(record), getDeleteConfirmationKeyboard(record.id))
+    await ctx.answerCallbackQuery({ text: 'Нужно подтверждение' })
+    return true
+  }
+
+  if (action === 'confirm-delete') {
     await prisma.birthday.update({
       where: { id: record.id },
       data: { deletedAt: new Date() },
     })
 
-    await editCallbackMessage(ctx, `Готово, удалил запись: ${record.fullName}`, getListBackKeyboard())
+    await editCallbackMessage(
+      ctx,
+      [`Готово, удалил запись: ${record.fullName}`, '', 'Можешь вернуться в список или в главное меню.'].join('\n'),
+      getListBackKeyboard(),
+    )
     await ctx.answerCallbackQuery({ text: 'Удалено' })
     return true
   }

@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { Bot, type Context } from 'grammy'
+import { Bot, type Context, type InlineKeyboard } from 'grammy'
 import {
   beginAddBirthdayFlow,
   cancelAddBirthdayFlow,
@@ -13,15 +13,24 @@ import {
   selectAddBirthdayMonth,
   skipAddBirthdayStep,
 } from './add-birthday.js'
+import { beginInlineEdit } from './birthday-inline-edit.js'
 import {
+  findBirthdays,
   getBirthdayDetailResult,
   renameBirthday,
+  resolveBirthdayAction,
   setBirthdayDate,
   softDeleteBirthday,
   toggleBirthdayReminder,
   updateBirthdayNote,
+  type BirthdayAction,
 } from './birthday-detail.js'
-import { handleBirthdayCallback, sendBirthdayDetail, sendUpdatedBirthdayDetail } from './birthday-callbacks.js'
+import {
+  handleBirthdayCallback,
+  promptDeleteConfirmation,
+  sendBirthdayDetail,
+  sendUpdatedBirthdayDetail,
+} from './birthday-callbacks.js'
 import { cancelInlineEdit, handleInlineEditText, hasInlineEditSession } from './birthday-inline-edit.js'
 import { formatStartMessage } from './format.js'
 import { formatHelpMessage } from './help.js'
@@ -50,6 +59,70 @@ async function replyWithOptionalKeyboard(ctx: Context, text: string): Promise<vo
   }
 
   await ctx.reply(text)
+}
+
+async function replyWithTextResult(
+  ctx: Context,
+  result: { text: string; replyMarkup?: InlineKeyboard },
+): Promise<void> {
+  if (result.replyMarkup) {
+    await ctx.reply(result.text, { reply_markup: result.replyMarkup })
+    return
+  }
+
+  await ctx.reply(result.text)
+}
+
+async function handleBirthdayActionSelection(
+  ctx: Context,
+  userId: string,
+  action: BirthdayAction,
+  birthdayId: string,
+  query: string,
+): Promise<void> {
+  const birthdays = await findBirthdays(userId, query)
+  const resolution = resolveBirthdayAction(birthdays, query, action)
+
+  if (resolution.kind !== 'single' || resolution.birthday.id !== birthdayId) {
+    await replyWithTextResult(ctx, {
+      text: 'Эта запись уже не подходит. Попробуй ещё раз.',
+    })
+    return
+  }
+
+  if (action === 'view') {
+    await sendBirthdayDetail(ctx, userId, birthdayId)
+    return
+  }
+
+  if (action === 'note') {
+    await ctx.reply('Выбрал запись. Теперь отправь новую заметку одним сообщением.')
+    await ctx.reply(beginInlineEdit(ctx, birthdayId, 'note'))
+    return
+  }
+
+  if (action === 'toggle') {
+    await handleBirthdayCallback(ctx, userId, `birthday:toggle:${birthdayId}`)
+    return
+  }
+
+  if (action === 'delete') {
+    const prompted = await promptDeleteConfirmation(ctx, userId, birthdayId)
+
+    if (!prompted) {
+      await ctx.reply('Не нашёл такую запись.')
+    }
+    return
+  }
+
+  if (action === 'rename') {
+    await ctx.reply('Выбрал запись. Теперь отправь новое имя одним сообщением.')
+    await ctx.reply(beginInlineEdit(ctx, birthdayId, 'rename'))
+    return
+  }
+
+  await ctx.reply('Выбрал запись. Теперь отправь новую дату в формате DD.MM или DD.MM.YYYY.')
+  await ctx.reply(beginInlineEdit(ctx, birthdayId, 'setdate'))
 }
 
 bot.command('start', async (ctx) => {
@@ -175,7 +248,7 @@ bot.command('note', async (ctx) => {
   const query = queryPart?.trim() ?? ''
   const note = noteParts.join('|').trim()
 
-  await ctx.reply(await updateBirthdayNote(user.id, query, note))
+  await replyWithTextResult(ctx, await updateBirthdayNote(user.id, query, note))
 })
 
 bot.command('toggle', async (ctx) => {
@@ -186,7 +259,7 @@ bot.command('toggle', async (ctx) => {
   const user = await upsertUserFromContext(ctx)
   const query = String(ctx.match).trim()
 
-  await ctx.reply(await toggleBirthdayReminder(user.id, query))
+  await replyWithTextResult(ctx, await toggleBirthdayReminder(user.id, query))
 })
 
 bot.command('rename', async (ctx) => {
@@ -200,7 +273,7 @@ bot.command('rename', async (ctx) => {
   const query = queryPart?.trim() ?? ''
   const fullName = nameParts.join('|').trim()
 
-  await ctx.reply(await renameBirthday(user.id, query, fullName))
+  await replyWithTextResult(ctx, await renameBirthday(user.id, query, fullName))
 })
 
 bot.command('setdate', async (ctx) => {
@@ -214,7 +287,7 @@ bot.command('setdate', async (ctx) => {
   const query = queryPart?.trim() ?? ''
   const dateInput = dateParts.join('|').trim()
 
-  await ctx.reply(await setBirthdayDate(user.id, query, dateInput))
+  await replyWithTextResult(ctx, await setBirthdayDate(user.id, query, dateInput))
 })
 
 bot.command('delete', async (ctx) => {
@@ -225,7 +298,7 @@ bot.command('delete', async (ctx) => {
   const user = await upsertUserFromContext(ctx)
   const query = String(ctx.match).trim()
 
-  await ctx.reply(await softDeleteBirthday(user.id, query))
+  await replyWithTextResult(ctx, await softDeleteBirthday(user.id, query))
 })
 
 bot.command('test_notification', async (ctx) => {
@@ -309,6 +382,22 @@ bot.on('callback_query:data', async (ctx) => {
     const month = Number(data.replace('birthday:add:month:', ''))
     await ctx.answerCallbackQuery({ text: 'Месяц выбран' })
     await replyWithOptionalKeyboard(ctx, selectAddBirthdayMonth(ctx, month))
+    return
+  }
+
+  if (data.startsWith('birthday:select:')) {
+    const parts = data.split(':')
+    const action = parts[2]
+    const birthdayId = parts[3]
+    const encodedQuery = parts[4]
+
+    if (!action || !birthdayId || !encodedQuery) {
+      await ctx.answerCallbackQuery({ text: 'Не понял выбор' })
+      return
+    }
+
+    await ctx.answerCallbackQuery()
+    await handleBirthdayActionSelection(ctx, user.id, action as BirthdayAction, birthdayId, decodeURIComponent(encodedQuery))
     return
   }
 

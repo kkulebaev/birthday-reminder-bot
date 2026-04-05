@@ -3,6 +3,13 @@ import type { Birthday } from '@prisma/client'
 import { prisma } from './db.js'
 import { getMainMenuKeyboard } from './main-menu.js'
 
+export type BirthdayAction = 'view' | 'note' | 'toggle' | 'delete' | 'rename' | 'setdate'
+
+export type BirthdayActionResolution =
+  | { kind: 'single'; birthday: Birthday }
+  | { kind: 'not-found'; text: string; replyMarkup: InlineKeyboard }
+  | { kind: 'ambiguous'; text: string; replyMarkup: InlineKeyboard }
+
 function formatDateLine(birthday: Birthday): string {
   const day = String(birthday.day).padStart(2, '0')
   const month = String(birthday.month).padStart(2, '0')
@@ -27,11 +34,66 @@ function formatBirthdayDetail(birthday: Birthday): string {
   ].join('\n')
 }
 
-function createAmbiguousBirthdayKeyboard(idsAndNames: Array<{ id: string; fullName: string }>): InlineKeyboard {
+function getActionPrompt(action: BirthdayAction): string {
+  if (action === 'note') {
+    return 'Выбери запись, для которой нужно обновить заметку.'
+  }
+
+  if (action === 'toggle') {
+    return 'Выбери запись, для которой нужно переключить напоминания.'
+  }
+
+  if (action === 'delete') {
+    return 'Выбери запись, которую нужно удалить.'
+  }
+
+  if (action === 'rename') {
+    return 'Выбери запись, для которой нужно изменить имя.'
+  }
+
+  if (action === 'setdate') {
+    return 'Выбери запись, для которой нужно изменить дату.'
+  }
+
+  return 'Выбери нужную запись ниже.'
+}
+
+function getActionLabel(action: BirthdayAction): string {
+  if (action === 'note') {
+    return 'Заметка'
+  }
+
+  if (action === 'toggle') {
+    return 'Напоминания'
+  }
+
+  if (action === 'delete') {
+    return 'Удалить'
+  }
+
+  if (action === 'rename') {
+    return 'Переименовать'
+  }
+
+  if (action === 'setdate') {
+    return 'Изменить дату'
+  }
+
+  return 'Открыть'
+}
+
+function createActionSelectionKeyboard(
+  birthdays: Birthday[],
+  action: BirthdayAction,
+  query: string,
+): InlineKeyboard {
   const keyboard = new InlineKeyboard()
 
-  for (const item of idsAndNames) {
-    keyboard.text(item.fullName, `birthday:view:${item.id}`).row()
+  for (const birthday of birthdays) {
+    keyboard.text(
+      `${birthday.fullName} — ${formatDateLine(birthday)}`,
+      `birthday:select:${action}:${birthday.id}:${encodeURIComponent(query)}`,
+    ).row()
   }
 
   keyboard.text('🏠 Главное меню', 'menu:home')
@@ -39,7 +101,7 @@ function createAmbiguousBirthdayKeyboard(idsAndNames: Array<{ id: string; fullNa
   return keyboard
 }
 
-async function findBirthdays(userId: string, query: string): Promise<Birthday[]> {
+export async function findBirthdays(userId: string, query: string): Promise<Birthday[]> {
   return prisma.birthday.findMany({
     where: {
       userId,
@@ -56,34 +118,28 @@ async function findBirthdays(userId: string, query: string): Promise<Birthday[]>
   })
 }
 
-function getSingleBirthdayOrMessage(
+export function resolveBirthdayAction(
   birthdays: Birthday[],
   query: string,
-  action: 'view' | 'note' | 'toggle' | 'delete' | 'rename' | 'setdate',
-): { birthday: Birthday } | { message: string; replyMarkup?: InlineKeyboard } {
+  action: BirthdayAction,
+): BirthdayActionResolution {
   if (birthdays.length === 0) {
     return {
-      message: `Ничего не нашёл по запросу: ${query}`,
+      kind: 'not-found',
+      text: `Ничего не нашёл по запросу: ${query}`,
       replyMarkup: getMainMenuKeyboard(),
     }
   }
 
   if (birthdays.length > 1) {
-    if (action === 'view') {
-      return {
-        message: [
-          `Нашёл несколько записей по запросу: ${query}`,
-          '',
-          'Выбери нужную запись ниже.',
-        ].join('\n'),
-        replyMarkup: createAmbiguousBirthdayKeyboard(
-          birthdays.map((birthday) => ({ id: birthday.id, fullName: birthday.fullName })),
-        ),
-      }
-    }
-
     return {
-      message: `Нашлось несколько записей. Уточни запрос для /${action}.`,
+      kind: 'ambiguous',
+      text: [
+        `Нашёл несколько записей по запросу: ${query}`,
+        '',
+        getActionPrompt(action),
+      ].join('\n'),
+      replyMarkup: createActionSelectionKeyboard(birthdays, action, query),
     }
   }
 
@@ -91,12 +147,16 @@ function getSingleBirthdayOrMessage(
 
   if (!birthday) {
     return {
-      message: `Ничего не нашёл по запросу: ${query}`,
+      kind: 'not-found',
+      text: `Ничего не нашёл по запросу: ${query}`,
       replyMarkup: getMainMenuKeyboard(),
     }
   }
 
-  return { birthday }
+  return {
+    kind: 'single',
+    birthday,
+  }
 }
 
 function parseInteger(value: string): number | null {
@@ -158,18 +218,12 @@ export async function getBirthdayDetailResult(userId: string, query: string): Pr
   }
 
   const birthdays = await findBirthdays(userId, normalizedQuery)
-  const result = getSingleBirthdayOrMessage(birthdays, normalizedQuery, 'view')
+  const result = resolveBirthdayAction(birthdays, normalizedQuery, 'view')
 
-  if ('message' in result) {
-    if (result.replyMarkup) {
-      return {
-        text: result.message,
-        replyMarkup: result.replyMarkup,
-      }
-    }
-
+  if (result.kind !== 'single') {
     return {
-      text: result.message,
+      text: result.text,
+      replyMarkup: result.replyMarkup,
     }
   }
 
@@ -184,18 +238,23 @@ export async function getBirthdayDetailMessage(userId: string, query: string): P
   return result.text
 }
 
-export async function updateBirthdayNote(userId: string, query: string, note: string): Promise<string> {
+export async function updateBirthdayNote(userId: string, query: string, note: string): Promise<{ text: string; replyMarkup?: InlineKeyboard }> {
   const normalizedQuery = query.trim()
 
   if (!normalizedQuery || !note.trim()) {
-    return 'Напиши так: /note часть имени | новая заметка'
+    return {
+      text: 'Напиши так: /note часть имени | новая заметка',
+    }
   }
 
   const birthdays = await findBirthdays(userId, normalizedQuery)
-  const result = getSingleBirthdayOrMessage(birthdays, normalizedQuery, 'note')
+  const result = resolveBirthdayAction(birthdays, normalizedQuery, 'note')
 
-  if ('message' in result) {
-    return result.message
+  if (result.kind !== 'single') {
+    return {
+      text: result.text,
+      replyMarkup: result.replyMarkup,
+    }
   }
 
   const birthday = await prisma.birthday.update({
@@ -207,21 +266,28 @@ export async function updateBirthdayNote(userId: string, query: string, note: st
     },
   })
 
-  return ['Готово, заметку обновил.', '', formatBirthdayDetail(birthday)].join('\n')
+  return {
+    text: ['Готово, заметку обновил.', '', formatBirthdayDetail(birthday)].join('\n'),
+  }
 }
 
-export async function toggleBirthdayReminder(userId: string, query: string): Promise<string> {
+export async function toggleBirthdayReminder(userId: string, query: string): Promise<{ text: string; replyMarkup?: InlineKeyboard }> {
   const normalizedQuery = query.trim()
 
   if (!normalizedQuery) {
-    return 'Напиши так: /toggle часть имени'
+    return {
+      text: 'Напиши так: /toggle часть имени',
+    }
   }
 
   const birthdays = await findBirthdays(userId, normalizedQuery)
-  const result = getSingleBirthdayOrMessage(birthdays, normalizedQuery, 'toggle')
+  const result = resolveBirthdayAction(birthdays, normalizedQuery, 'toggle')
 
-  if ('message' in result) {
-    return result.message
+  if (result.kind !== 'single') {
+    return {
+      text: result.text,
+      replyMarkup: result.replyMarkup,
+    }
   }
 
   const birthday = await prisma.birthday.update({
@@ -233,21 +299,28 @@ export async function toggleBirthdayReminder(userId: string, query: string): Pro
     },
   })
 
-  return ['Готово, статус напоминаний обновил.', '', formatBirthdayDetail(birthday)].join('\n')
+  return {
+    text: ['Готово, статус напоминаний обновил.', '', formatBirthdayDetail(birthday)].join('\n'),
+  }
 }
 
-export async function softDeleteBirthday(userId: string, query: string): Promise<string> {
+export async function softDeleteBirthday(userId: string, query: string): Promise<{ text: string; replyMarkup?: InlineKeyboard }> {
   const normalizedQuery = query.trim()
 
   if (!normalizedQuery) {
-    return 'Напиши так: /delete часть имени'
+    return {
+      text: 'Напиши так: /delete часть имени',
+    }
   }
 
   const birthdays = await findBirthdays(userId, normalizedQuery)
-  const result = getSingleBirthdayOrMessage(birthdays, normalizedQuery, 'delete')
+  const result = resolveBirthdayAction(birthdays, normalizedQuery, 'delete')
 
-  if ('message' in result) {
-    return result.message
+  if (result.kind !== 'single') {
+    return {
+      text: result.text,
+      replyMarkup: result.replyMarkup,
+    }
   }
 
   const birthday = await prisma.birthday.update({
@@ -259,22 +332,29 @@ export async function softDeleteBirthday(userId: string, query: string): Promise
     },
   })
 
-  return `Готово, удалил запись: ${birthday.fullName}`
+  return {
+    text: `Готово, удалил запись: ${birthday.fullName}`,
+  }
 }
 
-export async function renameBirthday(userId: string, query: string, fullName: string): Promise<string> {
+export async function renameBirthday(userId: string, query: string, fullName: string): Promise<{ text: string; replyMarkup?: InlineKeyboard }> {
   const normalizedQuery = query.trim()
   const normalizedFullName = fullName.trim()
 
   if (!normalizedQuery || !normalizedFullName) {
-    return 'Напиши так: /rename часть имени | новое имя'
+    return {
+      text: 'Напиши так: /rename часть имени | новое имя',
+    }
   }
 
   const birthdays = await findBirthdays(userId, normalizedQuery)
-  const result = getSingleBirthdayOrMessage(birthdays, normalizedQuery, 'rename')
+  const result = resolveBirthdayAction(birthdays, normalizedQuery, 'rename')
 
-  if ('message' in result) {
-    return result.message
+  if (result.kind !== 'single') {
+    return {
+      text: result.text,
+      replyMarkup: result.replyMarkup,
+    }
   }
 
   const birthday = await prisma.birthday.update({
@@ -286,27 +366,36 @@ export async function renameBirthday(userId: string, query: string, fullName: st
     },
   })
 
-  return ['Готово, имя обновил.', '', formatBirthdayDetail(birthday)].join('\n')
+  return {
+    text: ['Готово, имя обновил.', '', formatBirthdayDetail(birthday)].join('\n'),
+  }
 }
 
-export async function setBirthdayDate(userId: string, query: string, dateInput: string): Promise<string> {
+export async function setBirthdayDate(userId: string, query: string, dateInput: string): Promise<{ text: string; replyMarkup?: InlineKeyboard }> {
   const normalizedQuery = query.trim()
 
   if (!normalizedQuery || !dateInput.trim()) {
-    return 'Напиши так: /setdate часть имени | DD.MM или DD.MM.YYYY'
+    return {
+      text: 'Напиши так: /setdate часть имени | DD.MM или DD.MM.YYYY',
+    }
   }
 
   const parsedDate = parseDateInput(dateInput)
 
   if (!parsedDate) {
-    return 'Дата должна быть в формате DD.MM или DD.MM.YYYY.'
+    return {
+      text: 'Дата должна быть в формате DD.MM или DD.MM.YYYY.',
+    }
   }
 
   const birthdays = await findBirthdays(userId, normalizedQuery)
-  const result = getSingleBirthdayOrMessage(birthdays, normalizedQuery, 'setdate')
+  const result = resolveBirthdayAction(birthdays, normalizedQuery, 'setdate')
 
-  if ('message' in result) {
-    return result.message
+  if (result.kind !== 'single') {
+    return {
+      text: result.text,
+      replyMarkup: result.replyMarkup,
+    }
   }
 
   const birthday = await prisma.birthday.update({
@@ -320,5 +409,19 @@ export async function setBirthdayDate(userId: string, query: string, dateInput: 
     },
   })
 
-  return ['Готово, дату обновил.', '', formatBirthdayDetail(birthday)].join('\n')
+  return {
+    text: ['Готово, дату обновил.', '', formatBirthdayDetail(birthday)].join('\n'),
+  }
+}
+
+export function getBirthdayActionSelectionMessage(action: BirthdayAction, query: string): string {
+  return [
+    `Нашёл несколько записей по запросу: ${query}`,
+    '',
+    getActionPrompt(action),
+  ].join('\n')
+}
+
+export function getBirthdayActionLabel(action: BirthdayAction): string {
+  return getActionLabel(action)
 }
