@@ -1,6 +1,12 @@
-# Birthday Reminder Bot — Lumen
+# 🎂 Birthday Reminder Bot — Lumen
 
-Telegram-first birthday reminder bot with a friendly product personality.
+[![Test](https://github.com/kkulebaev/birthday-reminder-bot/actions/workflows/test.yml/badge.svg)](https://github.com/kkulebaev/birthday-reminder-bot/actions/workflows/test.yml)
+[![Lint](https://github.com/kkulebaev/birthday-reminder-bot/actions/workflows/lint.yml/badge.svg)](https://github.com/kkulebaev/birthday-reminder-bot/actions/workflows/lint.yml)
+[![Typecheck](https://github.com/kkulebaev/birthday-reminder-bot/actions/workflows/typecheck.yml/badge.svg)](https://github.com/kkulebaev/birthday-reminder-bot/actions/workflows/typecheck.yml)
+[![Last Commit](https://img.shields.io/github/last-commit/kkulebaev/birthday-reminder-bot)](https://github.com/kkulebaev/birthday-reminder-bot/commits/main)
+[![Top Language](https://img.shields.io/github/languages/top/kkulebaev/birthday-reminder-bot)](https://github.com/kkulebaev/birthday-reminder-bot)
+
+> A calm Telegram-first assistant for remembering important birthdays and important dates.
 
 ## Current status
 
