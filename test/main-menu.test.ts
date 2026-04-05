@@ -2,8 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { getHomeButtonKeyboard, getMainMenuKeyboard, getMainMenuText } from '../src/main-menu.js'
 
 describe('main menu', () => {
-  it('returns main menu text', () => {
-    expect(getMainMenuText()).toBe('Что хочешь сделать?')
+  it('returns richer main menu text', () => {
+    expect(getMainMenuText()).toBe([
+      '🎂 Birthday Reminder Bot',
+      '',
+      'Я помогу не забыть важные даты.',
+      'Выбери, что хочешь сделать дальше.',
+    ].join('\n'))
   })
 
   it('builds main menu keyboard with expected buttons', () => {

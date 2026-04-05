@@ -5,7 +5,12 @@ import { getSettingsMessage } from './settings.js'
 import { getUpcomingBirthdaysMessage } from './upcoming-birthdays.js'
 
 export function getMainMenuText(): string {
-  return 'Что хочешь сделать?'
+  return [
+    '🎂 Birthday Reminder Bot',
+    '',
+    'Я помогу не забыть важные даты.',
+    'Выбери, что хочешь сделать дальше.',
+  ].join('\n')
 }
 
 export function getMainMenuKeyboard(): InlineKeyboard {
