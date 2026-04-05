@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  TIMEZONE_PRESETS,
   formatSettingsText,
   getSettingsKeyboard,
+  getTimezonePickerKeyboard,
+  getTimezonePickerText,
   isValidNotifyTime,
   isValidTimezone,
 } from '../src/settings.js'
@@ -32,6 +35,24 @@ describe('settings helpers', () => {
     expect(keyboard.inline_keyboard[1]?.map((button) => button.text)).toEqual(['🕘 09:00', '🕛 12:00', '🕕 18:00'])
     expect(keyboard.inline_keyboard[2]?.[0]?.text).toBe('🔕 Выключить уведомления')
     expect(keyboard.inline_keyboard[3]?.[0]?.text).toBe('🏠 Главное меню')
+  })
+
+  it('builds timezone picker with presets and manual fallback', () => {
+    const keyboard = getTimezonePickerKeyboard()
+
+    expect(TIMEZONE_PRESETS).toHaveLength(6)
+    expect(keyboard.inline_keyboard[0]?.map((button) => button.text)).toEqual(['🌍 UTC', '🇷🇺 Moscow'])
+    expect(keyboard.inline_keyboard[1]?.map((button) => button.text)).toEqual(['🇬🇪 Tbilisi', '🇩🇪 Berlin'])
+    expect(keyboard.inline_keyboard[2]?.map((button) => button.text)).toEqual(['🇦🇪 Dubai', '🇺🇸 New York'])
+    expect(keyboard.inline_keyboard[3]?.[0]?.text).toBe('✍️ Ввести вручную')
+    expect(keyboard.inline_keyboard[4]?.[0]?.text).toBe('⚙️ Назад к настройкам')
+  })
+
+  it('formats timezone picker guidance text', () => {
+    const result = getTimezonePickerText()
+
+    expect(result).toContain('Выбери часовой пояс ниже.')
+    expect(result).toContain('Ввести вручную')
   })
 
   it('switches notifications toggle label when disabled', () => {

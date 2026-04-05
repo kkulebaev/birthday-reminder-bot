@@ -43,9 +43,12 @@ import {
   beginSettingsEdit,
   cancelSettingsEdit,
   getSettingsMessage,
+  getTimezonePickerKeyboard,
+  getTimezonePickerText,
   handleSettingsEditText,
   hasSettingsEditSession,
   setNotifyTimePreset,
+  setTimezonePreset,
   toggleNotificationsEnabled,
 } from './settings.js'
 import { sendTestNotification } from './test-notification.js'
@@ -428,8 +431,32 @@ bot.on('callback_query:data', async (ctx) => {
   }
 
   if (data === 'settings:edit-timezone') {
+    await ctx.answerCallbackQuery()
+    await ctx.reply(getTimezonePickerText(), {
+      reply_markup: getTimezonePickerKeyboard(),
+    })
+    return
+  }
+
+  if (data === 'settings:edit-timezone-manual') {
     await ctx.answerCallbackQuery({ text: 'Жду часовой пояс' })
     await ctx.reply(beginSettingsEdit(ctx, 'timezone'))
+    return
+  }
+
+  if (data.startsWith('settings:preset-timezone:')) {
+    const timezone = data.replace('settings:preset-timezone:', '')
+    const message = await setTimezonePreset(user.id, timezone)
+    const settingsMessage = await getSettingsMessage(user.id)
+
+    await ctx.answerCallbackQuery({ text: message })
+    if (ctx.chat?.id && ctx.callbackQuery?.message?.message_id) {
+      await ctx.api.editMessageText(ctx.chat.id, ctx.callbackQuery.message.message_id, settingsMessage.text, {
+        reply_markup: settingsMessage.replyMarkup,
+      })
+    } else {
+      await ctx.reply(settingsMessage.text, { reply_markup: settingsMessage.replyMarkup })
+    }
     return
   }
 

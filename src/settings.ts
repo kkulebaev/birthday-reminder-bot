@@ -18,6 +18,15 @@ export type SettingsEditResult =
   | { kind: 'invalid'; message: string }
   | { kind: 'updated'; message: string }
 
+export const TIMEZONE_PRESETS = [
+  { label: '🌍 UTC', value: 'UTC' },
+  { label: '🇷🇺 Moscow', value: 'Europe/Moscow' },
+  { label: '🇬🇪 Tbilisi', value: 'Asia/Tbilisi' },
+  { label: '🇩🇪 Berlin', value: 'Europe/Berlin' },
+  { label: '🇦🇪 Dubai', value: 'Asia/Dubai' },
+  { label: '🇺🇸 New York', value: 'America/New_York' },
+] as const
+
 const sessions = new Map<string, SettingsSession>()
 
 function getUserKey(ctx: Context): string {
@@ -64,6 +73,24 @@ export function getSettingsKeyboard(settings: UserSettingsRecord): InlineKeyboar
     .text('🏠 Главное меню', 'menu:home')
 }
 
+export function getTimezonePickerKeyboard(): InlineKeyboard {
+  const keyboard = new InlineKeyboard()
+
+  TIMEZONE_PRESETS.forEach((preset, index) => {
+    keyboard.text(preset.label, `settings:preset-timezone:${preset.value}`)
+
+    if (index % 2 === 1 && index !== TIMEZONE_PRESETS.length - 1) {
+      keyboard.row()
+    }
+  })
+
+  return keyboard
+    .row()
+    .text('✍️ Ввести вручную', 'settings:edit-timezone-manual')
+    .row()
+    .text('⚙️ Назад к настройкам', 'menu:settings')
+}
+
 async function getUserSettings(userId: string): Promise<UserSettingsRecord | null> {
   return prisma.userSettings.findUnique({
     where: { userId },
@@ -88,13 +115,24 @@ export async function getSettingsMessage(userId: string): Promise<{ text: string
   }
 }
 
+export function getTimezonePickerText(): string {
+  return [
+    'Выбери часовой пояс ниже.',
+    '',
+    'Если нужного варианта нет, нажми «Ввести вручную».',
+  ].join('\n')
+}
+
 export function beginSettingsEdit(ctx: Context, mode: SettingsEditMode): string {
   sessions.set(getUserKey(ctx), { mode })
 
   if (mode === 'timezone') {
     return [
       'Отправь часовой пояс одним сообщением.',
-      'Например: Europe/Moscow или UTC',
+      'Формат: Region/City',
+      'Примеры: UTC, Europe/Moscow, Asia/Tbilisi',
+      'Если не знаешь точное название, возьми его из списка tz database:',
+      'https://en.wikipedia.org/wiki/List_of_tz_database_time_zones',
     ].join('\n')
   }
 
@@ -164,6 +202,19 @@ export async function setNotifyTimePreset(userId: string, notifyAt: string): Pro
   return `Готово, время уведомления теперь ${notifyAt}.`
 }
 
+export async function setTimezonePreset(userId: string, timezone: string): Promise<string> {
+  if (!isValidTimezone(timezone)) {
+    throw new Error('Invalid timezone preset')
+  }
+
+  await prisma.userSettings.update({
+    where: { userId },
+    data: { timezone },
+  })
+
+  return `Готово, часовой пояс теперь ${timezone}.`
+}
+
 export async function handleSettingsEditText(ctx: Context, userId: string, text: string): Promise<SettingsEditResult> {
   const session = sessions.get(getUserKey(ctx))
 
@@ -175,7 +226,15 @@ export async function handleSettingsEditText(ctx: Context, userId: string, text:
 
   if (session.mode === 'timezone') {
     if (!isValidTimezone(value)) {
-      return { kind: 'invalid', message: 'Не похоже на корректный часовой пояс. Например: Europe/Moscow или UTC.' }
+      return {
+        kind: 'invalid',
+        message: [
+          'Не похоже на корректный часовой пояс.',
+          'Используй формат Region/City, например Europe/Moscow или Asia/Tbilisi.',
+          'Если не знаешь точное название, посмотри список tz database:',
+          'https://en.wikipedia.org/wiki/List_of_tz_database_time_zones',
+        ].join('\n'),
+      }
     }
 
     await prisma.userSettings.update({

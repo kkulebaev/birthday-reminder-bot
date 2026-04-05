@@ -38,7 +38,7 @@ Working beta foundation:
 - after saving a birthday, the bot offers next actions: add another, open the card, open the list, or go home
 - record cards are state-aware: reminder toggle reflects current status, note actions change based on whether a note exists, and note removal is available inline
 - upcoming birthdays screen includes direct navigation to record cards
-- settings screen lets the user review and update timezone and notification time from the main menu, includes quick time presets, and supports toggling notifications on/off
+- settings screen lets the user review and update timezone and notification time from the main menu, includes quick time presets, timezone presets with manual fallback, and supports toggling notifications on/off
 - birthday notifications include inline actions to open the record card or disable reminders directly from the notification
 
 ## Stack
