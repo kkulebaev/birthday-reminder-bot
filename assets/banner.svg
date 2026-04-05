@@ -64,12 +64,12 @@
     <circle cx="126" cy="324" r="7" fill="#BDF5FF"/>
     <text x="146" y="332" fill="#EAF3FF" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="20" font-weight="600">Telegram-first</text>
 
-    <rect x="296" y="300" width="208" height="48" rx="24" fill="rgba(255,255,255,0.06)" stroke="rgba(165,140,255,0.2)"/>
+    <rect x="296" y="300" width="236" height="48" rx="24" fill="rgba(255,255,255,0.06)" stroke="rgba(165,140,255,0.2)"/>
     <circle cx="326" cy="324" r="7" fill="#A58CFF"/>
     <text x="346" y="332" fill="#EAF3FF" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="20" font-weight="600">Birthday reminders</text>
 
-    <rect x="520" y="300" width="144" height="48" rx="24" fill="rgba(255,255,255,0.06)" stroke="rgba(121,175,255,0.2)"/>
-    <circle cx="550" cy="324" r="7" fill="#79AFFF"/>
-    <text x="570" y="332" fill="#EAF3FF" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="20" font-weight="600">Calm UX</text>
+    <rect x="548" y="300" width="168" height="48" rx="24" fill="rgba(255,255,255,0.06)" stroke="rgba(121,175,255,0.2)"/>
+    <circle cx="578" cy="324" r="7" fill="#79AFFF"/>
+    <text x="598" y="332" fill="#EAF3FF" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="20" font-weight="600">Calm UX</text>
   </g>
 </svg>
