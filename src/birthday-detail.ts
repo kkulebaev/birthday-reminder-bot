@@ -126,8 +126,16 @@ export function resolveBirthdayAction(
   if (birthdays.length === 0) {
     return {
       kind: 'not-found',
-      text: `Ничего не нашёл по запросу: ${query}`,
-      replyMarkup: getMainMenuKeyboard(),
+      text: [
+        `Ничего не нашёл по запросу: ${query}`,
+        '',
+        'Попробуй другой запрос или добавь новую запись.',
+      ].join('\n'),
+      replyMarkup: new InlineKeyboard()
+        .text('➕ Добавить', 'menu:add')
+        .text('📋 Открыть список', 'menu:list')
+        .row()
+        .text('🏠 Главное меню', 'menu:home'),
     }
   }
 
@@ -148,8 +156,16 @@ export function resolveBirthdayAction(
   if (!birthday) {
     return {
       kind: 'not-found',
-      text: `Ничего не нашёл по запросу: ${query}`,
-      replyMarkup: getMainMenuKeyboard(),
+      text: [
+        `Ничего не нашёл по запросу: ${query}`,
+        '',
+        'Попробуй другой запрос или добавь новую запись.',
+      ].join('\n'),
+      replyMarkup: new InlineKeyboard()
+        .text('➕ Добавить', 'menu:add')
+        .text('📋 Открыть список', 'menu:list')
+        .row()
+        .text('🏠 Главное меню', 'menu:home'),
     }
   }
 

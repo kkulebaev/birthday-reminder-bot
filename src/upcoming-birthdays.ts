@@ -1,6 +1,5 @@
 import { InlineKeyboard } from 'grammy'
 import { prisma } from './db.js'
-import { getMainMenuKeyboard } from './main-menu.js'
 
 const UPCOMING_LIMIT = 5
 export const DAY_IN_MS = 24 * 60 * 60 * 1000
@@ -59,6 +58,14 @@ export function sortUpcomingBirthdays(
     .sort((left, right) => left.nextOccurrence.getTime() - right.nextOccurrence.getTime())
 }
 
+export function createEmptyUpcomingKeyboard(): InlineKeyboard {
+  return new InlineKeyboard()
+    .text('➕ Добавить первую запись', 'menu:add')
+    .row()
+    .text('📋 Открыть список', 'menu:list')
+    .text('🏠 Главное меню', 'menu:home')
+}
+
 export async function getUpcomingBirthdaysMessage(userId: string): Promise<{ text: string; replyMarkup: InlineKeyboard }> {
   const fromDate = getStartOfUtcDay(new Date())
   const birthdays = await prisma.birthday.findMany({
@@ -78,9 +85,9 @@ export async function getUpcomingBirthdaysMessage(userId: string): Promise<{ tex
       text: [
         'Пока тут пусто.',
         '',
-        'Добавь первую запись командой /add 🎂',
+        'Добавь первый день рождения — и я покажу ближайшие важные даты.',
       ].join('\n'),
-      replyMarkup: getMainMenuKeyboard(),
+      replyMarkup: createEmptyUpcomingKeyboard(),
     }
   }
 
@@ -92,6 +99,10 @@ export async function getUpcomingBirthdaysMessage(userId: string): Promise<{ tex
       '',
       ...upcoming.map((birthday, index) => formatUpcomingLine(index + 1, birthday, fromDate)),
     ].join('\n'),
-    replyMarkup: getMainMenuKeyboard(),
+    replyMarkup: new InlineKeyboard()
+      .text('➕ Добавить', 'menu:add')
+      .text('📋 Список', 'menu:list')
+      .row()
+      .text('🏠 Главное меню', 'menu:home'),
   }
 }

@@ -1,7 +1,6 @@
 import { InlineKeyboard } from 'grammy'
 import { prisma } from './db.js'
 import { BIRTHDAY_PAGE_SIZE, formatBirthdayLine } from './birthday-format.js'
-import { getMainMenuKeyboard } from './main-menu.js'
 
 export function createBirthdayListKeyboard(idsAndNames: Array<{ id: string; fullName: string }>): InlineKeyboard {
   const keyboard = new InlineKeyboard()
@@ -10,16 +9,24 @@ export function createBirthdayListKeyboard(idsAndNames: Array<{ id: string; full
     keyboard.text(item.fullName, `birthday:view:${item.id}`).row()
   }
 
-  keyboard.text('🏠 Главное меню', 'menu:home')
+  keyboard.text('➕ Добавить', 'menu:add').text('🏠 Главное меню', 'menu:home')
 
   return keyboard
+}
+
+export function createEmptyBirthdayListKeyboard(): InlineKeyboard {
+  return new InlineKeyboard()
+    .text('➕ Добавить первую запись', 'menu:add')
+    .row()
+    .text('🎈 Ближайшие', 'menu:upcoming')
+    .text('🏠 Главное меню', 'menu:home')
 }
 
 export function formatEmptyBirthdayListMessage(): string {
   return [
     'Пока тут пусто.',
     '',
-    'Добавь первую запись командой /add 🎂',
+    'Добавь первый день рождения — и я помогу не забыть важную дату 🎂',
   ].join('\n')
 }
 
@@ -48,7 +55,7 @@ export async function getBirthdayListMessage(userId: string): Promise<{ text: st
   if (birthdays.length === 0) {
     return {
       text: formatEmptyBirthdayListMessage(),
-      replyMarkup: getMainMenuKeyboard(),
+      replyMarkup: createEmptyBirthdayListKeyboard(),
     }
   }
 

@@ -15,9 +15,11 @@ export function createBirthdaySearchKeyboard(idsAndNames: Array<{ id: string; fu
   return keyboard
 }
 
-export function createEmptySearchKeyboard(): InlineKeyboard {
+export function createEmptySearchKeyboard(query: string): InlineKeyboard {
   return new InlineKeyboard()
-    .text('➕ Добавить', 'menu:add')
+    .text(`➕ Добавить «${query}»`, 'menu:add')
+    .row()
+    .text('📋 Открыть список', 'menu:list')
     .text('🏠 Главное меню', 'menu:home')
 }
 
@@ -35,7 +37,7 @@ export function formatEmptyBirthdaySearchMessage(query: string): string {
   return [
     `Ничего не нашёл по запросу: ${query}`,
     '',
-    'Попробуй другой запрос или добавь новую запись.',
+    'Попробуй другой запрос или сразу добавь новую запись.',
   ].join('\n')
 }
 
@@ -74,7 +76,7 @@ export async function getBirthdaySearchResult(userId: string, query: string): Pr
     return {
       kind: 'empty',
       text: formatEmptyBirthdaySearchMessage(normalizedQuery),
-      replyMarkup: createEmptySearchKeyboard(),
+      replyMarkup: createEmptySearchKeyboard(normalizedQuery),
     }
   }
 
@@ -85,7 +87,7 @@ export async function getBirthdaySearchResult(userId: string, query: string): Pr
       return {
         kind: 'empty',
         text: formatEmptyBirthdaySearchMessage(normalizedQuery),
-        replyMarkup: createEmptySearchKeyboard(),
+        replyMarkup: createEmptySearchKeyboard(normalizedQuery),
       }
     }
 

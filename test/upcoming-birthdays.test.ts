@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  createEmptyUpcomingKeyboard,
   formatUpcomingDate,
   formatUpcomingLine,
   getDaysUntil,
@@ -70,5 +71,12 @@ describe('upcoming birthdays logic', () => {
     )
 
     expect(result.map((item) => item.fullName)).toEqual(['Сегодня', 'Позже', 'Уже прошло'])
+  })
+
+  it('builds empty upcoming keyboard with next actions', () => {
+    const keyboard = createEmptyUpcomingKeyboard()
+
+    expect(keyboard.inline_keyboard[0]?.[0]?.text).toBe('➕ Добавить первую запись')
+    expect(keyboard.inline_keyboard[1]?.map((button) => button.text)).toEqual(['📋 Открыть список', '🏠 Главное меню'])
   })
 })

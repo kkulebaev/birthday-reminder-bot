@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { getMainMenuKeyboard } from '../src/main-menu.js'
 import {
   getBirthdayActionSelectionMessage,
   resolveBirthdayAction,
@@ -34,7 +33,7 @@ const secondBirthday = {
 }
 
 describe('birthday action disambiguation', () => {
-  it('returns not-found result with home keyboard', () => {
+  it('returns not-found result with actionable keyboard', () => {
     const result = resolveBirthdayAction([], 'анна', 'view')
 
     expect(result.kind).toBe('not-found')
@@ -43,8 +42,9 @@ describe('birthday action disambiguation', () => {
       throw new Error('Expected not-found result')
     }
 
-    expect(result.text).toBe('Ничего не нашёл по запросу: анна')
-    expect(result.replyMarkup.inline_keyboard).toEqual(getMainMenuKeyboard().inline_keyboard)
+    expect(result.text).toContain('Ничего не нашёл по запросу: анна')
+    expect(result.text).toContain('Попробуй другой запрос или добавь новую запись.')
+    expect(result.replyMarkup.inline_keyboard[0]?.map((button) => button.text)).toEqual(['➕ Добавить', '📋 Открыть список'])
   })
 
   it('returns single result when only one birthday matches', () => {
