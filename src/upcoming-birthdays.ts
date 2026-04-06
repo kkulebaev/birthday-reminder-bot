@@ -1,7 +1,7 @@
 import { InlineKeyboard } from 'grammy'
 import { prisma } from './db.js'
 
-const UPCOMING_LIMIT = 5
+export const UPCOMING_PAGE_SIZE = 5
 export const DAY_IN_MS = 24 * 60 * 60 * 1000
 
 export type UpcomingBirthday = {
@@ -67,23 +67,73 @@ export function createEmptyUpcomingKeyboard(): InlineKeyboard {
     .text('🏠 Главное меню', 'menu:home')
 }
 
-export function createUpcomingKeyboard(upcoming: UpcomingBirthday[]): InlineKeyboard {
-  const keyboard = new InlineKeyboard()
+export function getUpcomingTotalPages(totalItems: number, pageSize: number = UPCOMING_PAGE_SIZE): number {
+  return Math.max(1, Math.ceil(totalItems / pageSize))
+}
 
-  for (const birthday of upcoming) {
-    keyboard.text(`${birthday.fullName} — ${formatUpcomingDate(birthday.nextOccurrence)}`, `birthday:view:${birthday.id}`).row()
+export function normalizeUpcomingPageIndex(pageIndex: number, totalItems: number, pageSize: number = UPCOMING_PAGE_SIZE): number {
+  if (!Number.isInteger(pageIndex) || pageIndex < 0) {
+    return 0
   }
 
-  keyboard
-    .text('➕ Добавить', 'menu:add')
-    .text('⚙️ Настройки', 'menu:settings')
-    .row()
-    .text('🏠 Главное меню', 'menu:home')
+  const lastPageIndex = getUpcomingTotalPages(totalItems, pageSize) - 1
+
+  return Math.min(pageIndex, lastPageIndex)
+}
+
+export function getUpcomingPageItems(
+  upcoming: UpcomingBirthday[],
+  pageIndex: number,
+  pageSize: number = UPCOMING_PAGE_SIZE,
+): UpcomingBirthday[] {
+  const normalizedPageIndex = normalizeUpcomingPageIndex(pageIndex, upcoming.length, pageSize)
+  const startIndex = normalizedPageIndex * pageSize
+
+  return upcoming.slice(startIndex, startIndex + pageSize)
+}
+
+export function createUpcomingKeyboard(
+  upcoming: UpcomingBirthday[],
+  pageIndex: number,
+  totalItems: number,
+  pageSize: number = UPCOMING_PAGE_SIZE,
+): InlineKeyboard {
+  const keyboard = new InlineKeyboard()
+
+  for (const [index, birthday] of upcoming.entries()) {
+    keyboard.text(`${birthday.fullName} — ${formatUpcomingDate(birthday.nextOccurrence)}`, `birthday:view:${birthday.id}`)
+
+    if (index < upcoming.length - 1) {
+      keyboard.row()
+    }
+  }
+
+  const totalPages = getUpcomingTotalPages(totalItems, pageSize)
+  const normalizedPageIndex = normalizeUpcomingPageIndex(pageIndex, totalItems, pageSize)
+
+  if (totalPages > 1) {
+    keyboard.row()
+
+    if (normalizedPageIndex > 0) {
+      keyboard.text('◀️', `birthday:upcoming-page:${normalizedPageIndex - 1}`)
+    }
+
+    keyboard.text(`${normalizedPageIndex + 1}/${totalPages}`, `birthday:upcoming-page:${normalizedPageIndex}`)
+
+    if (normalizedPageIndex < totalPages - 1) {
+      keyboard.text('▶️', `birthday:upcoming-page:${normalizedPageIndex + 1}`)
+    }
+  }
+
+  keyboard.row().text('↩️ Главное меню', 'menu:home')
 
   return keyboard
 }
 
-export async function getUpcomingBirthdaysMessage(userId: string): Promise<{ text: string; replyMarkup: InlineKeyboard }> {
+export async function getUpcomingBirthdaysMessage(
+  userId: string,
+  pageIndex: number = 0,
+): Promise<{ text: string; replyMarkup: InlineKeyboard }> {
   const fromDate = getStartOfUtcDay(new Date())
   const birthdays = await prisma.birthday.findMany({
     where: {
@@ -109,16 +159,19 @@ export async function getUpcomingBirthdaysMessage(userId: string): Promise<{ tex
     }
   }
 
-  const upcoming = sortUpcomingBirthdays(birthdays, fromDate).slice(0, UPCOMING_LIMIT)
+  const sortedUpcoming = sortUpcomingBirthdays(birthdays, fromDate)
+  const normalizedPageIndex = normalizeUpcomingPageIndex(pageIndex, sortedUpcoming.length)
+  const upcoming = getUpcomingPageItems(sortedUpcoming, normalizedPageIndex)
+  const startIndex = normalizedPageIndex * UPCOMING_PAGE_SIZE
 
   return {
     text: [
       '🎈 Ближайшие дни рождения',
       '',
-      ...upcoming.map((birthday, index) => formatUpcomingLine(index + 1, birthday, fromDate)),
+      ...upcoming.map((birthday, index) => formatUpcomingLine(startIndex + index + 1, birthday, fromDate)),
       '',
       'Нажми на человека ниже, чтобы открыть карточку.',
     ].join('\n'),
-    replyMarkup: createUpcomingKeyboard(upcoming),
+    replyMarkup: createUpcomingKeyboard(upcoming, normalizedPageIndex, sortedUpcoming.length),
   }
 }

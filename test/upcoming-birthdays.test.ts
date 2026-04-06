@@ -7,6 +7,9 @@ import {
   getDaysUntil,
   getNextOccurrence,
   getStartOfUtcDay,
+  getUpcomingPageItems,
+  getUpcomingTotalPages,
+  normalizeUpcomingPageIndex,
   sortUpcomingBirthdays,
 } from '../src/upcoming-birthdays.js'
 
@@ -82,28 +85,98 @@ describe('upcoming birthdays logic', () => {
     expect(keyboard.inline_keyboard[1]?.map((button) => button.text)).toEqual(['🏠 Главное меню'])
   })
 
-  it('builds upcoming keyboard with direct links to birthday cards', () => {
-    const keyboard = createUpcomingKeyboard([
-      {
-        id: 'b1',
-        fullName: 'Иван Иванов',
-        day: 4,
-        month: 4,
-        nextOccurrence: new Date('2026-04-04T00:00:00.000Z'),
-      },
-      {
-        id: 'b2',
-        fullName: 'Мария Петрова',
-        day: 10,
-        month: 4,
-        nextOccurrence: new Date('2026-04-10T00:00:00.000Z'),
-      },
-    ])
+  it('calculates total pages with a minimum of one page', () => {
+    expect(getUpcomingTotalPages(0)).toBe(1)
+    expect(getUpcomingTotalPages(5)).toBe(1)
+    expect(getUpcomingTotalPages(6)).toBe(2)
+  })
+
+  it('normalizes invalid page index values', () => {
+    expect(normalizeUpcomingPageIndex(-1, 12)).toBe(0)
+    expect(normalizeUpcomingPageIndex(Number.NaN, 12)).toBe(0)
+    expect(normalizeUpcomingPageIndex(99, 12)).toBe(2)
+  })
+
+  it('returns only birthdays for the requested page', () => {
+    const pageItems = getUpcomingPageItems(
+      [
+        {
+          id: 'b1',
+          fullName: 'Иван Иванов',
+          day: 4,
+          month: 4,
+          nextOccurrence: new Date('2026-04-04T00:00:00.000Z'),
+        },
+        {
+          id: 'b2',
+          fullName: 'Мария Петрова',
+          day: 5,
+          month: 4,
+          nextOccurrence: new Date('2026-04-05T00:00:00.000Z'),
+        },
+        {
+          id: 'b3',
+          fullName: 'Анна Смирнова',
+          day: 6,
+          month: 4,
+          nextOccurrence: new Date('2026-04-06T00:00:00.000Z'),
+        },
+      ],
+      1,
+      2,
+    )
+
+    expect(pageItems.map((item) => item.id)).toEqual(['b3'])
+  })
+
+  it('builds upcoming keyboard with pagination and home button', () => {
+    const keyboard = createUpcomingKeyboard(
+      [
+        {
+          id: 'b6',
+          fullName: 'Иван Иванов',
+          day: 4,
+          month: 4,
+          nextOccurrence: new Date('2026-04-04T00:00:00.000Z'),
+        },
+        {
+          id: 'b7',
+          fullName: 'Мария Петрова',
+          day: 10,
+          month: 4,
+          nextOccurrence: new Date('2026-04-10T00:00:00.000Z'),
+        },
+      ],
+      1,
+      12,
+      5,
+    )
 
     expect(keyboard.inline_keyboard[0]?.[0]?.text).toBe('Иван Иванов — 04.04')
-    expect(keyboard.inline_keyboard[0]?.[0]?.callback_data).toBe('birthday:view:b1')
+    expect(keyboard.inline_keyboard[0]?.[0]?.callback_data).toBe('birthday:view:b6')
     expect(keyboard.inline_keyboard[1]?.[0]?.text).toBe('Мария Петрова — 10.04')
-    expect(keyboard.inline_keyboard[2]?.map((button) => button.text)).toEqual(['➕ Добавить', '⚙️ Настройки'])
-    expect(keyboard.inline_keyboard[3]?.map((button) => button.text)).toEqual(['🏠 Главное меню'])
+    expect(keyboard.inline_keyboard[2]?.map((button) => button.text)).toEqual(['◀️', '2/3', '▶️'])
+    expect(keyboard.inline_keyboard[2]?.[0]?.callback_data).toBe('birthday:upcoming-page:0')
+    expect(keyboard.inline_keyboard[2]?.[1]?.callback_data).toBe('birthday:upcoming-page:1')
+    expect(keyboard.inline_keyboard[2]?.[2]?.callback_data).toBe('birthday:upcoming-page:2')
+    expect(keyboard.inline_keyboard[3]?.map((button) => button.text)).toEqual(['↩️ Главное меню'])
+  })
+
+  it('hides pagination controls when there is only one page', () => {
+    const keyboard = createUpcomingKeyboard(
+      [
+        {
+          id: 'b1',
+          fullName: 'Иван Иванов',
+          day: 4,
+          month: 4,
+          nextOccurrence: new Date('2026-04-04T00:00:00.000Z'),
+        },
+      ],
+      0,
+      1,
+    )
+
+    expect(keyboard.inline_keyboard[1]?.map((button) => button.text)).toEqual(['↩️ Главное меню'])
   })
 })

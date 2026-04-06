@@ -176,6 +176,14 @@ export async function handleBirthdayCallback(ctx: Context, userId: string, data:
     return true
   }
 
+  if (data.startsWith('birthday:upcoming-page:')) {
+    const pageIndex = Number.parseInt(data.replace('birthday:upcoming-page:', ''), 10)
+    const result = await getUpcomingBirthdaysMessage(userId, pageIndex)
+    await editCallbackMessage(ctx, result.text, result.replyMarkup)
+    await ctx.answerCallbackQuery()
+    return true
+  }
+
   if (data.startsWith('birthday:view:')) {
     const birthdayId = data.replace('birthday:view:', '')
     const record = await getOwnedBirthday(userId, birthdayId)

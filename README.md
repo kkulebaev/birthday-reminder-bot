@@ -26,7 +26,7 @@ Birthday Reminder Bot — Lumen helps you keep important birthdays in one place 
 Use `/add` or open `/menu` and follow the step-by-step flow. Each step includes a back button so you can return and edit previous answers before saving.
 
 ### Check upcoming birthdays
-Use `/upcoming` to see the nearest important dates and open any birthday card from there.
+Use `/upcoming` to see the nearest important dates, move between pages with arrow buttons, and open any birthday card from there.
 
 ### Find a person quickly
 Use `/search <name>` to find a birthday card by name.
