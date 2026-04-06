@@ -50,6 +50,7 @@ import {
   toggleNotificationsEnabled,
 } from './settings.js'
 import { sendTestNotification } from './test-notification.js'
+import { getSafeErrorMessage, safeEditMessageText } from './telegram-api.js'
 import { getUpcomingBirthdaysMessage } from './upcoming-birthdays.js'
 import { isPrivateChat, upsertUserFromContext } from './user.js'
 
@@ -430,9 +431,7 @@ bot.on('callback_query:data', async (ctx) => {
 
     await ctx.answerCallbackQuery({ text: message })
     if (ctx.chat?.id && ctx.callbackQuery?.message?.message_id) {
-      await ctx.api.editMessageText(ctx.chat.id, ctx.callbackQuery.message.message_id, settingsMessage.text, {
-        reply_markup: settingsMessage.replyMarkup,
-      })
+      await safeEditMessageText(ctx.api, ctx.chat.id, ctx.callbackQuery.message.message_id, settingsMessage.text, settingsMessage.replyMarkup)
     } else {
       await ctx.reply(settingsMessage.text, { reply_markup: settingsMessage.replyMarkup })
     }
@@ -451,9 +450,7 @@ bot.on('callback_query:data', async (ctx) => {
 
     await ctx.answerCallbackQuery({ text: message })
     if (ctx.chat?.id && ctx.callbackQuery?.message?.message_id) {
-      await ctx.api.editMessageText(ctx.chat.id, ctx.callbackQuery.message.message_id, settingsMessage.text, {
-        reply_markup: settingsMessage.replyMarkup,
-      })
+      await safeEditMessageText(ctx.api, ctx.chat.id, ctx.callbackQuery.message.message_id, settingsMessage.text, settingsMessage.replyMarkup)
     } else {
       await ctx.reply(settingsMessage.text, { reply_markup: settingsMessage.replyMarkup })
     }
@@ -467,9 +464,7 @@ bot.on('callback_query:data', async (ctx) => {
 
     await ctx.answerCallbackQuery({ text: message })
     if (ctx.chat?.id && ctx.callbackQuery?.message?.message_id) {
-      await ctx.api.editMessageText(ctx.chat.id, ctx.callbackQuery.message.message_id, settingsMessage.text, {
-        reply_markup: settingsMessage.replyMarkup,
-      })
+      await safeEditMessageText(ctx.api, ctx.chat.id, ctx.callbackQuery.message.message_id, settingsMessage.text, settingsMessage.replyMarkup)
     } else {
       await ctx.reply(settingsMessage.text, { reply_markup: settingsMessage.replyMarkup })
     }
@@ -565,5 +560,5 @@ bot.hears(/^\/[A-Za-z0-9_]+(?:@\w+)?(?:\s.*)?$/, async (ctx) => {
 })
 
 bot.catch((error) => {
-  console.error('Bot error', error)
+  console.error('Bot error', getSafeErrorMessage(error))
 })

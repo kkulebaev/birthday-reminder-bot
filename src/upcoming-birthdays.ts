@@ -118,7 +118,7 @@ export function createUpcomingKeyboard(
       keyboard.text('◀️', `birthday:upcoming-page:${normalizedPageIndex - 1}`)
     }
 
-    keyboard.text(`${normalizedPageIndex + 1}/${totalPages}`, `birthday:upcoming-page:${normalizedPageIndex}`)
+    keyboard.text(`${normalizedPageIndex + 1}/${totalPages}`, 'birthday:upcoming-page-current')
 
     if (normalizedPageIndex < totalPages - 1) {
       keyboard.text('▶️', `birthday:upcoming-page:${normalizedPageIndex + 1}`)

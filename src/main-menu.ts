@@ -2,6 +2,7 @@ import { InlineKeyboard, type Context } from 'grammy'
 import { beginAddBirthdayFlow } from './add-birthday.js'
 import { formatHelpMessage } from './help.js'
 import { getSettingsMessage } from './settings.js'
+import { safeEditMessageText } from './telegram-api.js'
 import { getUpcomingBirthdaysMessage } from './upcoming-birthdays.js'
 
 export function getMainMenuText(): string {
@@ -35,9 +36,7 @@ export async function sendMainMenu(ctx: Context): Promise<void> {
 export async function handleMainMenuCallback(ctx: Context, userId: string, data: string): Promise<boolean> {
   if (data === 'menu:home') {
     if (ctx.chat?.id && ctx.callbackQuery?.message?.message_id) {
-      await ctx.api.editMessageText(ctx.chat.id, ctx.callbackQuery.message.message_id, getMainMenuText(), {
-        reply_markup: getMainMenuKeyboard(),
-      })
+      await safeEditMessageText(ctx.api, ctx.chat.id, ctx.callbackQuery.message.message_id, getMainMenuText(), getMainMenuKeyboard())
     } else {
       await sendMainMenu(ctx)
     }
@@ -56,9 +55,7 @@ export async function handleMainMenuCallback(ctx: Context, userId: string, data:
     const result = await getUpcomingBirthdaysMessage(userId)
 
     if (ctx.chat?.id && ctx.callbackQuery?.message?.message_id) {
-      await ctx.api.editMessageText(ctx.chat.id, ctx.callbackQuery.message.message_id, result.text, {
-        reply_markup: result.replyMarkup,
-      })
+      await safeEditMessageText(ctx.api, ctx.chat.id, ctx.callbackQuery.message.message_id, result.text, result.replyMarkup)
     } else {
       await ctx.reply(result.text, {
         reply_markup: result.replyMarkup,
@@ -73,9 +70,7 @@ export async function handleMainMenuCallback(ctx: Context, userId: string, data:
     const result = await getSettingsMessage(userId)
 
     if (ctx.chat?.id && ctx.callbackQuery?.message?.message_id) {
-      await ctx.api.editMessageText(ctx.chat.id, ctx.callbackQuery.message.message_id, result.text, {
-        reply_markup: result.replyMarkup,
-      })
+      await safeEditMessageText(ctx.api, ctx.chat.id, ctx.callbackQuery.message.message_id, result.text, result.replyMarkup)
     } else {
       await ctx.reply(result.text, {
         reply_markup: result.replyMarkup,
@@ -88,9 +83,7 @@ export async function handleMainMenuCallback(ctx: Context, userId: string, data:
 
   if (data === 'menu:help') {
     if (ctx.chat?.id && ctx.callbackQuery?.message?.message_id) {
-      await ctx.api.editMessageText(ctx.chat.id, ctx.callbackQuery.message.message_id, formatHelpMessage(), {
-        reply_markup: getMainMenuKeyboard(),
-      })
+      await safeEditMessageText(ctx.api, ctx.chat.id, ctx.callbackQuery.message.message_id, formatHelpMessage(), getMainMenuKeyboard())
     } else {
       await ctx.reply(formatHelpMessage(), {
         reply_markup: getMainMenuKeyboard(),

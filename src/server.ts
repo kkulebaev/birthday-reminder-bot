@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import express, { type Request, type Response } from 'express'
 import { bot } from './bot.js'
+import { getSafeErrorMessage } from './telegram-api.js'
 
 function getWebhookPath(): string {
   return process.env.TELEGRAM_WEBHOOK_PATH ?? '/telegram/webhook'
@@ -20,7 +21,7 @@ function createApp() {
       await bot.handleUpdate(req.body)
       res.sendStatus(200)
     } catch (error) {
-      console.error('Webhook handler error', error)
+      console.error('Webhook handler error', getSafeErrorMessage(error))
       res.sendStatus(500)
     }
   })
@@ -43,6 +44,6 @@ export async function startServer(): Promise<void> {
 }
 
 void startServer().catch((error) => {
-  console.error('Server startup error', error)
+  console.error('Server startup error', getSafeErrorMessage(error))
   process.exitCode = 1
 })

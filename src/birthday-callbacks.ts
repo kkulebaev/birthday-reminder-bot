@@ -1,6 +1,7 @@
 import { InlineKeyboard, type Context } from 'grammy'
 import { beginInlineEdit } from './birthday-inline-edit.js'
 import { prisma } from './db.js'
+import { safeEditMessageText } from './telegram-api.js'
 import { getUpcomingBirthdaysMessage } from './upcoming-birthdays.js'
 
 export type BirthdayRecord = {
@@ -114,14 +115,7 @@ async function editCallbackMessage(ctx: Context, text: string, replyMarkup?: Inl
     return
   }
 
-  if (replyMarkup) {
-    await ctx.api.editMessageText(chatId, messageId, text, {
-      reply_markup: replyMarkup,
-    })
-    return
-  }
-
-  await ctx.api.editMessageText(chatId, messageId, text)
+  await safeEditMessageText(ctx.api, chatId, messageId, text, replyMarkup)
 }
 
 export async function sendBirthdayDetail(ctx: Context, userId: string, birthdayId: string): Promise<void> {
@@ -172,6 +166,11 @@ export async function handleBirthdayCallback(ctx: Context, userId: string, data:
   if (data === 'birthday:upcoming') {
     const result = await getUpcomingBirthdaysMessage(userId)
     await editCallbackMessage(ctx, result.text, result.replyMarkup)
+    await ctx.answerCallbackQuery()
+    return true
+  }
+
+  if (data === 'birthday:upcoming-page-current') {
     await ctx.answerCallbackQuery()
     return true
   }

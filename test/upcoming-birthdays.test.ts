@@ -157,7 +157,7 @@ describe('upcoming birthdays logic', () => {
     expect(keyboard.inline_keyboard[1]?.[0]?.text).toBe('Мария Петрова — 10.04')
     expect(keyboard.inline_keyboard[2]?.map((button) => button.text)).toEqual(['◀️', '2/3', '▶️'])
     expect(keyboard.inline_keyboard[2]?.[0]?.callback_data).toBe('birthday:upcoming-page:0')
-    expect(keyboard.inline_keyboard[2]?.[1]?.callback_data).toBe('birthday:upcoming-page:1')
+    expect(keyboard.inline_keyboard[2]?.[1]?.callback_data).toBe('birthday:upcoming-page-current')
     expect(keyboard.inline_keyboard[2]?.[2]?.callback_data).toBe('birthday:upcoming-page:2')
     expect(keyboard.inline_keyboard[3]?.map((button) => button.text)).toEqual(['↩️ Главное меню'])
   })
