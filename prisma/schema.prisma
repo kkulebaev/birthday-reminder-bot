@@ -13,17 +13,26 @@ enum DeliveryStatus {
   failed
 }
 
+enum ScheduledNotificationStatus {
+  pending
+  processing
+  sent
+  failed
+  canceled
+}
+
 model User {
-  id              String        @id @default(cuid())
-  telegramUserId  String        @unique @map("telegram_user_id")
-  telegramChatId  String        @unique @map("telegram_chat_id")
-  telegramUsername String?      @map("telegram_username")
-  telegramFirstName String?     @map("telegram_first_name")
-  settings        UserSettings?
-  birthdays       Birthday[]
-  deliveryLogs    DeliveryLog[]
-  createdAt       DateTime      @default(now()) @map("created_at")
-  updatedAt       DateTime      @updatedAt @map("updated_at")
+  id                     String                  @id @default(cuid())
+  telegramUserId         String                  @unique @map("telegram_user_id")
+  telegramChatId         String                  @unique @map("telegram_chat_id")
+  telegramUsername       String?                 @map("telegram_username")
+  telegramFirstName      String?                 @map("telegram_first_name")
+  settings               UserSettings?
+  birthdays              Birthday[]
+  deliveryLogs           DeliveryLog[]
+  scheduledNotifications ScheduledNotification[]
+  createdAt              DateTime                @default(now()) @map("created_at")
+  updatedAt              DateTime                @updatedAt @map("updated_at")
 
   @@map("users")
 }
@@ -41,40 +50,67 @@ model UserSettings {
 }
 
 model Birthday {
-  id                String      @id @default(cuid())
-  userId            String      @map("user_id")
-  fullName          String      @map("full_name")
-  month             Int
-  day               Int
-  birthYear         Int?        @map("birth_year")
-  notes             String?
-  isReminderEnabled Boolean     @default(true) @map("is_reminder_enabled")
-  deletedAt         DateTime?   @map("deleted_at")
-  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deliveryLogs      DeliveryLog[]
-  createdAt         DateTime    @default(now()) @map("created_at")
-  updatedAt         DateTime    @updatedAt @map("updated_at")
+  id                     String                  @id @default(cuid())
+  userId                 String                  @map("user_id")
+  fullName               String                  @map("full_name")
+  month                  Int
+  day                    Int
+  birthYear              Int?                    @map("birth_year")
+  notes                  String?
+  isReminderEnabled      Boolean                 @default(true) @map("is_reminder_enabled")
+  deletedAt              DateTime?               @map("deleted_at")
+  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveryLogs           DeliveryLog[]
+  scheduledNotifications ScheduledNotification[]
+  createdAt              DateTime                @default(now()) @map("created_at")
+  updatedAt              DateTime                @updatedAt @map("updated_at")
 
   @@map("birthdays")
 }
 
 model DeliveryLog {
-  id               String         @id @default(cuid())
-  userId           String         @map("user_id")
-  birthdayId       String         @map("birthday_id")
-  notificationType String         @map("notification_type")
-  occurrenceDate   DateTime       @map("occurrence_date") @db.Date
-  status           DeliveryStatus @default(pending)
-  attemptCount     Int            @default(0) @map("attempt_count")
-  lastAttemptAt    DateTime?      @map("last_attempt_at")
-  sentAt           DateTime?      @map("sent_at")
-  telegramMessageId String?       @map("telegram_message_id")
-  errorMessage     String?        @map("error_message")
-  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  birthday         Birthday       @relation(fields: [birthdayId], references: [id], onDelete: Cascade)
-  createdAt        DateTime       @default(now()) @map("created_at")
-  updatedAt        DateTime       @updatedAt @map("updated_at")
+  id                String         @id @default(cuid())
+  userId            String         @map("user_id")
+  birthdayId        String         @map("birthday_id")
+  notificationType  String         @map("notification_type")
+  occurrenceDate    DateTime       @map("occurrence_date") @db.Date
+  status            DeliveryStatus @default(pending)
+  attemptCount      Int            @default(0) @map("attempt_count")
+  lastAttemptAt     DateTime?      @map("last_attempt_at")
+  sentAt            DateTime?      @map("sent_at")
+  telegramMessageId String?        @map("telegram_message_id")
+  errorMessage      String?        @map("error_message")
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  birthday          Birthday       @relation(fields: [birthdayId], references: [id], onDelete: Cascade)
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
 
   @@unique([userId, birthdayId, notificationType, occurrenceDate])
   @@map("delivery_logs")
+}
+
+model ScheduledNotification {
+  id             String                      @id @default(cuid())
+  userId         String                      @map("user_id")
+  birthdayId     String                      @map("birthday_id")
+  occurrenceDate DateTime                    @map("occurrence_date") @db.Date
+  scheduledFor   DateTime                    @map("scheduled_for")
+  timezone       String
+  notifyAt       String                      @map("notify_at")
+  status         ScheduledNotificationStatus @default(pending)
+  lockedAt       DateTime?                   @map("locked_at")
+  sentAt         DateTime?                   @map("sent_at")
+  failedAt       DateTime?                   @map("failed_at")
+  canceledAt     DateTime?                   @map("canceled_at")
+  errorMessage   String?                     @map("error_message")
+  attemptCount   Int                         @default(0) @map("attempt_count")
+  user           User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  birthday       Birthday                    @relation(fields: [birthdayId], references: [id], onDelete: Cascade)
+  createdAt      DateTime                    @default(now()) @map("created_at")
+  updatedAt      DateTime                    @updatedAt @map("updated_at")
+
+  @@unique([birthdayId, occurrenceDate])
+  @@index([status, scheduledFor])
+  @@index([birthdayId, status])
+  @@map("scheduled_notifications")
 }

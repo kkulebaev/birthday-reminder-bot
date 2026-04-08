@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import express, { type Request, type Response } from 'express'
 import { bot } from './bot.js'
+import { schedulerService } from './scheduler-service.js'
 import { getSafeErrorMessage } from './telegram-api.js'
 
 function getWebhookPath(): string {
@@ -34,6 +35,7 @@ export async function startServer(): Promise<void> {
   const app = createApp()
 
   await bot.init()
+  await schedulerService.start()
 
   await new Promise<void>((resolve) => {
     app.listen(port, '0.0.0.0', () => {

@@ -2,6 +2,7 @@ import { InlineKeyboard } from 'grammy'
 import type { Birthday } from '@prisma/client'
 import { prisma } from './db.js'
 import { getMainMenuKeyboard } from './main-menu.js'
+import { schedulerService } from './scheduler-service.js'
 
 export type BirthdayAction = 'view' | 'note' | 'toggle' | 'delete' | 'rename' | 'setdate'
 
@@ -291,6 +292,8 @@ export async function toggleBirthdayReminder(userId: string, query: string): Pro
     },
   })
 
+  await schedulerService.rebuildBirthdayNotification(birthday.id)
+
   return {
     text: ['Готово, статус напоминаний обновил.', '', formatBirthdayDetail(birthday)].join('\n'),
   }
@@ -323,6 +326,8 @@ export async function softDeleteBirthday(userId: string, query: string): Promise
       deletedAt: new Date(),
     },
   })
+
+  await schedulerService.rebuildBirthdayNotification(birthday.id)
 
   return {
     text: `Готово, удалил запись: ${birthday.fullName}`,
@@ -400,6 +405,8 @@ export async function setBirthdayDate(userId: string, query: string, dateInput: 
       birthYear: parsedDate.birthYear,
     },
   })
+
+  await schedulerService.rebuildBirthdayNotification(birthday.id)
 
   return {
     text: ['Готово, дату обновил.', '', formatBirthdayDetail(birthday)].join('\n'),

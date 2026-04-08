@@ -1,5 +1,6 @@
 import type { Context } from 'grammy'
 import { prisma } from './db.js'
+import { schedulerService } from './scheduler-service.js'
 
 type InlineEditMode = 'note' | 'rename' | 'setdate'
 
@@ -156,6 +157,7 @@ export async function handleInlineEditText(ctx: Context, userId: string, text: s
     },
   })
 
+  await schedulerService.rebuildBirthdayNotification(birthday.id)
   sessions.delete(getUserKey(ctx))
   return { kind: 'updated', birthdayId: birthday.id, message: 'Готово, дату обновил.' }
 }

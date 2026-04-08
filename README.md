@@ -19,6 +19,7 @@ Birthday Reminder Bot — Lumen helps you keep important birthdays in one place 
 - lets you quickly open and edit each birthday card
 - sends reminders on the birthday itself
 - supports per-user notification time and timezone settings
+- keeps the next reminder scheduled inside the live bot process, without a separate cron poller
 
 ## Main flows
 
@@ -56,6 +57,7 @@ Open `/menu` → `⚙️ Настройки` to update your timezone, notificati
 - birthday cards support quick actions like edit, delete, and reminder toggle
 - reminders include inline actions to open the card or disable reminders directly
 - settings support timezone presets, manual timezone entry, quick time presets, and notification toggle
+- reminder delivery uses a database-backed in-process scheduler that restores overdue jobs after restart
 
 ## Development
 
@@ -65,7 +67,7 @@ Available scripts:
 - `npm run dev`
 - `npm run build`
 - `npm run start`
-- `npm run scheduler`
+- `npm run scheduler` (optional standalone scheduler process for debugging)
 - `npm run typecheck`
 - `npm run lint`
 - `npm run test`
