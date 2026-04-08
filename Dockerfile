@@ -1,4 +1,4 @@
-FROM node:24-bookworm-slim AS builder
+FROM node:24-slim AS builder
 WORKDIR /app
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
@@ -10,7 +10,7 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run prisma:generate && npm run build && npm prune --omit=dev
 
-FROM node:24-bookworm-slim AS runner
+FROM node:24-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
