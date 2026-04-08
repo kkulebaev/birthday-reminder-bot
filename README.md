@@ -73,3 +73,23 @@ Available scripts:
 - `npm run prisma:generate`
 - `npm run prisma:migrate:dev`
 - `npm run prisma:migrate:deploy`
+
+## Docker
+
+Build the image:
+
+```bash
+docker build -t birthday-reminder-bot .
+```
+
+Run the container:
+
+```bash
+docker run --rm \
+  --env-file .env \
+  -p 3000:3000 \
+  birthday-reminder-bot
+```
+
+The container starts the webhook server and in-process reminder scheduler together.
+Run Prisma migrations before starting the container in production.
