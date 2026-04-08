@@ -1,6 +1,7 @@
 import type { Birthday } from '@prisma/client'
 import { InlineKeyboard, type Context } from 'grammy'
 import { prisma } from './db.js'
+import { schedulerService } from './scheduler-service.js'
 import { upsertUserFromContext } from './user.js'
 
 export type AddBirthdayDraft = {
@@ -353,6 +354,7 @@ async function finishAddBirthdayFlow(ctx: Context, draftOverride?: AddBirthdayDr
     },
   })
 
+  await schedulerService.rebuildBirthdayNotification(birthday.id)
   clearSession(ctx)
 
   return {

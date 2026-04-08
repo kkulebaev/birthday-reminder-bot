@@ -1,5 +1,6 @@
 import { InlineKeyboard, type Context } from 'grammy'
 import { prisma } from './db.js'
+import { schedulerService } from './scheduler-service.js'
 
 export type SettingsEditMode = 'timezone' | 'notifyAt'
 
@@ -188,6 +189,7 @@ export async function toggleNotificationsEnabled(userId: string): Promise<string
     },
   })
 
+  await schedulerService.rebuildUserNotifications(userId)
   return updated.notificationsEnabled ? 'Уведомления включены.' : 'Уведомления выключены.'
 }
 
@@ -201,6 +203,7 @@ export async function setNotifyTimePreset(userId: string, notifyAt: string): Pro
     data: { notifyAt },
   })
 
+  await schedulerService.rebuildUserNotifications(userId)
   return `Готово, время уведомления теперь ${notifyAt}.`
 }
 
@@ -214,6 +217,7 @@ export async function setTimezonePreset(userId: string, timezone: string): Promi
     data: { timezone },
   })
 
+  await schedulerService.rebuildUserNotifications(userId)
   return `Готово, часовой пояс теперь ${timezone}.`
 }
 
@@ -244,6 +248,7 @@ export async function handleSettingsEditText(ctx: Context, userId: string, text:
       data: { timezone: value },
     })
 
+    await schedulerService.rebuildUserNotifications(userId)
     sessions.delete(getUserKey(ctx))
     return { kind: 'updated', message: 'Готово, часовой пояс обновил.' }
   }
@@ -257,6 +262,7 @@ export async function handleSettingsEditText(ctx: Context, userId: string, text:
     data: { notifyAt: value },
   })
 
+  await schedulerService.rebuildUserNotifications(userId)
   sessions.delete(getUserKey(ctx))
   return { kind: 'updated', message: 'Готово, время уведомления обновил.' }
 }

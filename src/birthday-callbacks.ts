@@ -1,6 +1,7 @@
 import { InlineKeyboard, type Context } from 'grammy'
 import { beginInlineEdit } from './birthday-inline-edit.js'
 import { prisma } from './db.js'
+import { schedulerService } from './scheduler-service.js'
 import { safeEditMessageText } from './telegram-api.js'
 import { getUpcomingBirthdaysMessage } from './upcoming-birthdays.js'
 
@@ -233,6 +234,7 @@ export async function handleBirthdayCallback(ctx: Context, userId: string, data:
       },
     })
 
+    await schedulerService.rebuildBirthdayNotification(updated.id)
     await editCallbackMessage(ctx, formatDetailText(updated), getDetailKeyboard(updated))
     await ctx.answerCallbackQuery({ text: updated.isReminderEnabled ? 'Напоминания включены' : 'Напоминания выключены' })
     return true
@@ -250,6 +252,7 @@ export async function handleBirthdayCallback(ctx: Context, userId: string, data:
       data: { deletedAt: new Date() },
     })
 
+    await schedulerService.rebuildBirthdayNotification(record.id)
     await editCallbackMessage(
       ctx,
       [`Готово, удалил запись: ${record.fullName}`, '', 'Можешь вернуться к ближайшим датам или в главное меню.'].join('\n'),
