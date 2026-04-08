@@ -61,6 +61,9 @@ Open `/menu` → `⚙️ Настройки` to update your timezone, notificati
 
 ## Development
 
+Node.js 24 is the target runtime for local development, CI, and Docker.
+Use `.nvmrc` if you manage Node versions with `nvm`.
+
 See `.env.example` for environment variables.
 
 Available scripts:
