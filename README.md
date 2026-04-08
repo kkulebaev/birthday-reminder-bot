@@ -67,7 +67,6 @@ Available scripts:
 - `npm run dev`
 - `npm run build`
 - `npm run start`
-- `npm run scheduler` (optional standalone scheduler process for debugging)
 - `npm run typecheck`
 - `npm run lint`
 - `npm run test`
