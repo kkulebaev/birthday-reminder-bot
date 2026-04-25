@@ -29,6 +29,11 @@ const IMMEDIATE_RETRY_DELAYS_MS = [5000, 30000, 120000]
 const FAILED_RECOVERY_DELAY_MS = 60 * 60 * 1000
 const PROCESSING_TIMEOUT_MS = 10 * 60 * 1000
 const MAX_TOTAL_ATTEMPTS = 6
+// Node.js uses a 32-bit signed integer for setTimeout delay values. Any value
+// exceeding this limit (~24.8 days) causes a TimeoutOverflowWarning and the
+// delay is clamped to 1ms. We cap the delay here so the timer fires safely and
+// reschedules itself when it fires, eventually reaching the correct time.
+const MAX_TIMEOUT_MS = Math.pow(2, 31) - 1
 
 let notificationBot: Bot | null = null
 
@@ -409,9 +414,15 @@ export class SchedulerService {
       return
     }
 
+    // Cap the delay to MAX_TIMEOUT_MS to avoid a TimeoutOverflowWarning from
+    // Node.js when the next notification is more than ~24.8 days away. When the
+    // capped timer fires, refreshTimer() is called again and will reschedule
+    // with the remaining delay until the notification is actually due.
+    const safeDelayMs = Math.min(delayMs, MAX_TIMEOUT_MS)
+
     this.timer = setTimeout(() => {
       void this.processDueNotifications()
-    }, delayMs)
+    }, safeDelayMs)
   }
 
   private async recoverStaleProcessing(): Promise<void> {
