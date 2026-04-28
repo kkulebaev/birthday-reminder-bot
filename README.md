@@ -221,12 +221,6 @@ prisma/
 test/                      # vitest specs
 ```
 
-## 🤝 Contributing
-
-- Conventional Commits (`feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `build`, `ci`, `revert`). Description: short, imperative, lowercase, no trailing period. No body.
-- TypeScript is strict, with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`.
-- Relative imports inside `src/` use `.js` extensions (NodeNext ESM).
-
 ## 📄 License
 
 [MIT](./LICENSE) © Konstantin Kulebaev.
