@@ -65,7 +65,7 @@ The reminder loop is owned by an external dkron service. The bot only mirrors th
 Birthdays are stored as `(month, day, birthYear?)` integers, not as `Date`s. The dkron job carries the user's IANA timezone so that the cron expression is evaluated in their local time. When you need "today" in user-local terms or want to format an upcoming date, use the helpers in `notification-schedule.ts` (or the relevant feature module) — never build comparisons out of raw `Date` arithmetic.
 
 ### Database
-PostgreSQL via Prisma (`prisma/schema.prisma`). `PrismaClient` is exported as a singleton from `src/db.ts`. Soft-delete pattern: `Birthday.deletedAt`. `DeliveryLog` is the audit trail for sends and is the only notification-related table (a `ScheduledNotification` queue table existed in an earlier revision and has been dropped — see `prisma/migrations/`).
+PostgreSQL via Prisma 7 (`prisma/schema.prisma`). The schema uses the new `prisma-client` generator and outputs to `src/generated/prisma/` (gitignored) — import types/enums from `./generated/prisma/client.js`, not `@prisma/client`. The connection URL lives in `prisma.config.ts` (`env('DATABASE_URL')`); `src/db.ts` instantiates `PrismaClient` with the `@prisma/adapter-pg` driver adapter. Soft-delete pattern: `Birthday.deletedAt`. `DeliveryLog` is the audit trail for sends and is the only notification-related table (a `ScheduledNotification` queue table existed in an earlier revision and has been dropped — see `prisma/migrations/`).
 
 ### TypeScript / ESM specifics
 - `"type": "module"` and `module: NodeNext` — relative imports inside `src/` **must** include the `.js` extension (e.g. `import { bot } from './bot.js'`) even though the source is `.ts`. Existing files all do this.
