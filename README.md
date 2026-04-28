@@ -225,4 +225,4 @@ test/                      # vitest specs
 
 [MIT](./LICENSE) © Konstantin Kulebaev.
 
-<sub>Made with quiet evenings, Telegram, and a small planet called Lumen.</sub>
+<sub>Made with quiet evenings, Telegram, and a friendly bot named Lumen.</sub>
