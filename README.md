@@ -19,14 +19,6 @@
     <img alt="Typecheck"
          src="https://img.shields.io/github/actions/workflow/status/kkulebaev/birthday-reminder-bot/typecheck.yml?branch=main&label=typecheck&style=flat-square&logo=typescript&logoColor=white&color=3178C6" />
   </a>
-  <a href="https://github.com/kkulebaev/birthday-reminder-bot/commits/main">
-    <img alt="Last commit"
-         src="https://img.shields.io/github/last-commit/kkulebaev/birthday-reminder-bot?style=flat-square&logo=git&logoColor=white&color=64748B" />
-  </a>
-  <a href="./LICENSE">
-    <img alt="License: MIT"
-         src="https://img.shields.io/badge/license-MIT-A58CFF?style=flat-square" />
-  </a>
 </p>
 
 <p>
