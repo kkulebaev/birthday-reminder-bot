@@ -9,7 +9,8 @@ RUN pnpm install --frozen-lockfile
 
 COPY tsconfig.json prisma.config.ts ./
 COPY src ./src
-RUN pnpm run prisma:generate && pnpm run build && pnpm prune --prod
+RUN DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/placeholder \
+    pnpm run prisma:generate && pnpm run build && pnpm prune --prod
 
 FROM node:24-slim AS runner
 WORKDIR /app
