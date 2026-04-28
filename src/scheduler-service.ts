@@ -5,6 +5,7 @@ const FIRE_REMINDER_PATH = '/internal/fire-reminder'
 
 type ReminderTarget = {
   id: string
+  fullName: string
   month: number
   day: number
   isReminderEnabled: boolean
@@ -71,6 +72,7 @@ async function loadReminderTarget(birthdayId: string): Promise<ReminderTarget | 
     where: { id: birthdayId },
     select: {
       id: true,
+      fullName: true,
       month: true,
       day: true,
       isReminderEnabled: true,
@@ -124,6 +126,7 @@ export class SchedulerService {
 
     await upsertBirthdayJob({
       birthdayId: target.id,
+      fullName: target.fullName,
       month: target.month,
       day: target.day,
       notifyAt: settings.notifyAt,

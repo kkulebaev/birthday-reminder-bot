@@ -2,6 +2,7 @@ import { getSafeErrorMessage } from './telegram-api.js'
 
 type BirthdayJobInput = {
   birthdayId: string
+  fullName: string
   month: number
   day: number
   notifyAt: string
@@ -21,6 +22,7 @@ type DkronHttpExecutorConfig = {
 
 type DkronJob = {
   name: string
+  displayname: string
   schedule: string
   timezone: string
   executor: 'http'
@@ -63,9 +65,20 @@ export function buildBirthdayCronExpression(input: { month: number; day: number;
   return `0 ${minute} ${hour} ${input.day} ${input.month} *`
 }
 
+export function buildBirthdayJobDisplayName(fullName: string): string {
+  const trimmed = fullName.trim()
+
+  if (!trimmed) {
+    return 'Birthday reminder'
+  }
+
+  return `Birthday · ${trimmed}`
+}
+
 function buildBirthdayJobPayload(input: BirthdayJobInput): DkronJob {
   return {
     name: getBirthdayJobName(input.birthdayId),
+    displayname: buildBirthdayJobDisplayName(input.fullName),
     schedule: buildBirthdayCronExpression(input),
     timezone: input.timezone,
     executor: 'http',

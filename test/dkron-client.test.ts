@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { buildBirthdayCronExpression, getBirthdayJobName } from '../src/dkron-client.js'
+import {
+  buildBirthdayCronExpression,
+  buildBirthdayJobDisplayName,
+  getBirthdayJobName,
+} from '../src/dkron-client.js'
 
 describe('dkron client helpers', () => {
   it('formats job name from birthday id', () => {
@@ -14,5 +18,15 @@ describe('dkron client helpers', () => {
   it('rejects malformed notifyAt values', () => {
     expect(() => buildBirthdayCronExpression({ month: 1, day: 1, notifyAt: '9:00' })).toThrow()
     expect(() => buildBirthdayCronExpression({ month: 1, day: 1, notifyAt: '24:00' })).toThrow()
+  })
+
+  it('builds display name from full name', () => {
+    expect(buildBirthdayJobDisplayName('Мама')).toBe('Birthday · Мама')
+    expect(buildBirthdayJobDisplayName('  Иван Петров  ')).toBe('Birthday · Иван Петров')
+  })
+
+  it('falls back when full name is empty', () => {
+    expect(buildBirthdayJobDisplayName('')).toBe('Birthday reminder')
+    expect(buildBirthdayJobDisplayName('   ')).toBe('Birthday reminder')
   })
 })
