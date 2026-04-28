@@ -24,8 +24,6 @@
 <p>
   <img alt="Node 24+"
        src="https://img.shields.io/badge/node-%E2%89%A524-339933?style=flat-square&logo=nodedotjs&logoColor=white" />
-  <img alt="TypeScript"
-       src="https://img.shields.io/badge/typescript-strict-3178C6?style=flat-square&logo=typescript&logoColor=white" />
   <img alt="pnpm"
        src="https://img.shields.io/badge/pnpm-10-F69220?style=flat-square&logo=pnpm&logoColor=white" />
   <img alt="grammY"
