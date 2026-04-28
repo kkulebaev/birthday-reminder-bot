@@ -1,4 +1,4 @@
-import type { Birthday } from '@prisma/client'
+import type { Birthday } from './generated/prisma/client.js'
 import { InlineKeyboard, type Context } from 'grammy'
 import { prisma } from './db.js'
 import { schedulerService } from './scheduler-service.js'

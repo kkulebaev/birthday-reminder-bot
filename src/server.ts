@@ -6,7 +6,7 @@ import { deleteBirthdayJob } from './dkron-client.js'
 import { formatBirthdayNotification, getBirthdayNotificationKeyboard } from './notification-format.js'
 import { schedulerService } from './scheduler-service.js'
 import { getSafeErrorMessage } from './telegram-api.js'
-import { DeliveryStatus } from '@prisma/client'
+import { DeliveryStatus } from './generated/prisma/client.js'
 
 function getWebhookPath(): string {
   return process.env.TELEGRAM_WEBHOOK_PATH ?? '/telegram/webhook'

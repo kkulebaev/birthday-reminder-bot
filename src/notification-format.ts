@@ -1,5 +1,5 @@
 import { InlineKeyboard } from 'grammy'
-import type { Birthday } from '@prisma/client'
+import type { Birthday } from './generated/prisma/client.js'
 
 export function formatBirthdayNotification(birthday: Birthday): string {
   const noteBlock = birthday.notes

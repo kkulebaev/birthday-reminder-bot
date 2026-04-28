@@ -8,7 +8,7 @@
     "node": true,
     "es2024": true
   },
-  "ignorePatterns": ["dist/**", "node_modules/**", "coverage/**"],
+  "ignorePatterns": ["dist/**", "node_modules/**", "coverage/**", "src/generated/**"],
   "rules": {
     "no-console": "off"
   }

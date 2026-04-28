@@ -1,4 +1,4 @@
-import type { Birthday } from '@prisma/client'
+import type { Birthday } from './generated/prisma/client.js'
 
 export const BIRTHDAY_PAGE_SIZE = 10
 

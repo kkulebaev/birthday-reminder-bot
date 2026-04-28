@@ -1,5 +1,5 @@
 import { InlineKeyboard } from 'grammy'
-import type { Birthday } from '@prisma/client'
+import type { Birthday } from './generated/prisma/client.js'
 import { prisma } from './db.js'
 import { getMainMenuKeyboard } from './main-menu.js'
 import { schedulerService } from './scheduler-service.js'
