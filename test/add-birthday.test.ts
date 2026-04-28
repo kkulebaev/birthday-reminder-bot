@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   getAddBirthdaySuccessKeyboard,
+  isLeapDayBirthday,
   isSkipValue,
   monthLabels,
   parseInteger,
@@ -55,6 +56,12 @@ describe('add birthday helpers', () => {
     expect(monthLabels).toHaveLength(12)
     expect(monthLabels[0]).toBe('Янв')
     expect(monthLabels[11]).toBe('Дек')
+  })
+
+  it('flags 29 february as leap-day birthday', () => {
+    expect(isLeapDayBirthday(29, 2)).toBe(true)
+    expect(isLeapDayBirthday(28, 2)).toBe(false)
+    expect(isLeapDayBirthday(29, 3)).toBe(false)
   })
 
   it('builds success keyboard with next actions', () => {
