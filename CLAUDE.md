@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-Package manager: **pnpm** (pinned via `packageManager` in `package.json`, `pnpm-lock.yaml` is committed). Enable with `corepack enable` if pnpm is not on `PATH`. Node 24+ is required (`.nvmrc`, `engines.node` and Docker base image all pin to Node 24).
+Package manager: **pnpm** (pinned via `packageManager` in `package.json`, `pnpm-lock.yaml` is committed). Enable with `corepack enable` if pnpm is not on `PATH`. Node 24+ is required (`engines.node` and the Docker base image both pin to Node 24).
 
 - `pnpm dev` — run the webhook server with `tsx` (no build step)
 - `pnpm build` — `tsc -p tsconfig.json` → `dist/`
@@ -19,21 +19,24 @@ Package manager: **pnpm** (pinned via `packageManager` in `package.json`, `pnpm-
 - `pnpm prisma:migrate:dev` — create/apply a dev migration
 - `pnpm prisma:migrate:deploy` — apply pending migrations (production)
 
-Required env vars: `TELEGRAM_BOT_TOKEN`, `DATABASE_URL` (PostgreSQL). Optional: `TELEGRAM_WEBHOOK_PATH` (default `/telegram/webhook`), `PORT` (default `3000`). See `.env.example`.
+Required env vars: `TELEGRAM_BOT_TOKEN`, `DATABASE_URL` (PostgreSQL), `DKRON_API_URL` (e.g. `http://dkron:8080`), `INTERNAL_WEBHOOK_SECRET` (shared secret used between dkron jobs and the bot's internal endpoint). Optional: `TELEGRAM_WEBHOOK_PATH` (default `/telegram/webhook`), `PORT` (default `3000`), and either `BOT_INTERNAL_URL` or `RAILWAY_PRIVATE_DOMAIN` to tell dkron how to reach the bot's `/internal/fire-reminder` endpoint (one of them must be set when `schedulerService` runs).
 
-Tests live in `test/` (vitest `include` is `test/**/*.test.ts`). One stray test file exists at `src/add-birthday.test.ts` — vitest does **not** pick it up; the active version is `test/add-birthday.test.ts`.
+Tests live in `test/` (vitest `include` is `test/**/*.test.ts`).
 
 ## Architecture
 
-This is a Telegram bot (grammY) that delivers birthday reminders. It runs as a single Express webhook server that hosts both the bot update handler and an in-process scheduler.
+This is a Telegram bot (grammY) that delivers birthday reminders. It runs as a single Express webhook server. Reminder timing is delegated to an external **dkron** instance via its HTTP API — the bot does not arm any in-process timers.
 
 ### Process model
 `src/server.ts` is the single entry point. On startup it:
 1. Calls `bot.init()` (grammY).
-2. Calls `schedulerService.start()` — recovers stale `processing` rows, then immediately processes any due notifications.
-3. Starts Express, exposing `GET /healthz` and `POST <TELEGRAM_WEBHOOK_PATH>` which forwards updates to `bot.handleUpdate(req.body)`.
+2. Calls `schedulerService.start()` — pings dkron and, if reachable, re-syncs every active birthday into a dkron job. If dkron is unreachable the bot still starts (jobs already living in dkron continue firing).
+3. Starts Express, exposing:
+   - `GET /healthz`
+   - `POST <TELEGRAM_WEBHOOK_PATH>` — forwards updates to `bot.handleUpdate(req.body)`
+   - `POST /internal/fire-reminder` — invoked by dkron jobs; gated by the `X-Internal-Auth` header which must equal `INTERNAL_WEBHOOK_SECRET`.
 
-There is **no separate cron/poller process**. The reminder loop is entirely in-process — see "Scheduler" below. Telegram must be configured to send updates via webhook (no long-polling code path).
+Telegram must be configured to send updates via webhook (no long-polling code path).
 
 ### Bot composition (`src/bot.ts`)
 `bot.ts` is the top-level router: it registers all `/commands`, the unified `callback_query:data` handler, and a `message:text` handler that fans text out to the active session (inline edit → settings edit → add-birthday wizard) before falling through. Almost every command is gated by `isPrivateChat(ctx)` and starts with `upsertUserFromContext(ctx)` to ensure a `User` + `UserSettings` row exists. Feature modules expose pure helpers that return `{ text, replyMarkup? }`; `bot.ts` is responsible for actually calling `ctx.reply` / `ctx.answerCallbackQuery`.
@@ -48,22 +51,21 @@ Three flows hold per-user state in module-level `Map`s keyed by Telegram user id
 
 These sessions are **lost on restart**. Anything that needs to survive a restart must be persisted via Prisma. The `bot.command('cancel')` handler clears all three.
 
-### Notification scheduler (`src/scheduler-service.ts`)
-The scheduler is the trickiest part of the system. Read it before changing anything in this area.
+### Reminder scheduling (dkron)
+The reminder loop is owned by an external dkron service. The bot only mirrors the desired job state into dkron and serves the callback when a job fires.
 
-- Source of truth is the `ScheduledNotification` table (Prisma). Each row represents one upcoming reminder for a (`birthdayId`, `occurrenceDate`) pair, with statuses `pending` → `processing` → `sent` / `failed` / `canceled`.
-- A single in-memory `setTimeout` is armed for the **earliest** pending row. When it fires, `processDueNotifications()` claims and sends every row whose `scheduledFor <= now`, then re-arms the timer. `refreshTimer()` must be called any time scheduled rows change (after creating/canceling/rebuilding).
-- `setTimeout` delays are capped at `MAX_TIMEOUT_MS` (`2^31 - 1` ≈ 24.8 days) — Node clamps anything larger to 1ms. When the capped timer fires it re-runs `refreshTimer()` and re-arms with the remaining delay. Do not remove this cap.
-- Sending uses up to three immediate retries (`IMMEDIATE_RETRY_DELAYS_MS`). On total failure the row is rescheduled inside the same occurrence day (`FAILED_RECOVERY_DELAY_MS`, ~1h) until `MAX_TOTAL_ATTEMPTS` is reached or the day ends — only then is it marked `failed` and the next occurrence created.
-- Stale `processing` rows older than `PROCESSING_TIMEOUT_MS` (10 min) are recovered to `pending` on startup, in case the previous process died mid-send.
-- After a successful send, the next occurrence is scheduled via `createNextScheduledNotification`.
-- Anything that affects when/whether a reminder fires (toggle, rename, delete, date change, settings change) **must** call `schedulerService.rebuildBirthdayNotification(birthdayId)` or `rebuildUserNotifications(userId)` so the in-memory timer and DB rows stay consistent.
+- `src/dkron-client.ts` is a thin wrapper around dkron's HTTP API (`POST /v1/jobs`, `DELETE /v1/jobs/:name`, `GET /v1/jobs` for ping). Each birthday becomes one dkron job named `bday-<birthdayId>` (see `getBirthdayJobName`).
+- The cron expression is **6 fields** (`seconds minute hour day month *`) — dkron expects seconds, do not drop them. `buildBirthdayCronExpression` produces `0 MM HH DD MM *` and the job's `timezone` is set to the user's IANA zone, so dkron evaluates the local time directly.
+- Each job is configured with the `http` executor: `POST <BOT_INTERNAL_URL or http://$RAILWAY_PRIVATE_DOMAIN:$PORT>/internal/fire-reminder`, `Content-Type: application/json`, `X-Internal-Auth: $INTERNAL_WEBHOOK_SECRET`, body `{"birthdayId":"..."}`, `expectCode: "200"`, `retries: 3`, `concurrency: "forbid"`.
+- `src/scheduler-service.ts` owns the sync logic. Anything that affects whether a reminder should fire (toggle, rename, delete, date change, settings change) **must** call either `schedulerService.rebuildBirthdayNotification(birthdayId)` (single record) or `schedulerService.rebuildUserNotifications(userId)` (whole user, e.g. after timezone/notifyAt change). `rebuildBirthdayNotification` will upsert the job when `shouldHaveJob` is true, and delete it otherwise (record missing/soft-deleted, `isReminderEnabled=false`, or `notificationsEnabled=false`).
+- When a job fires, dkron calls `POST /internal/fire-reminder` (handled in `server.ts`). The handler re-checks the latest birthday + user settings, sends the Telegram message via `bot.api.sendMessage`, and writes a row into `DeliveryLog` (idempotent on `(userId, birthdayId, notificationType, occurrenceDate)` — `occurrenceDate` is "today" in UTC). If the birthday is gone or reminders are off, it deletes the dkron job and returns 200. On send failure the row is recorded as `failed` and a 500 is returned so dkron can retry.
+- There is no in-process timer, no `setTimeout`, no `ScheduledNotification` table. Idempotency and retries are dkron's responsibility (`retries: 3`, `concurrency: "forbid"`); same-day duplicates are absorbed by the `DeliveryLog` unique key.
 
 ### Time zones
-All "next occurrence" math goes through `notification-schedule.ts`, which uses cached `Intl.DateTimeFormat` instances per IANA zone. Birthdays are stored as `(month, day, birthYear?)` integers, not as `Date`s — never compare them with raw `Date` arithmetic; always go through these helpers.
+Birthdays are stored as `(month, day, birthYear?)` integers, not as `Date`s. The dkron job carries the user's IANA timezone so that the cron expression is evaluated in their local time. When you need "today" in user-local terms or want to format an upcoming date, use the helpers in `notification-schedule.ts` (or the relevant feature module) — never build comparisons out of raw `Date` arithmetic.
 
 ### Database
-PostgreSQL via Prisma (`prisma/schema.prisma`). `PrismaClient` is exported as a singleton from `src/db.ts`. Soft-delete pattern: `Birthday.deletedAt`. `DeliveryLog` is the audit trail for sends; `ScheduledNotification` is the live queue.
+PostgreSQL via Prisma (`prisma/schema.prisma`). `PrismaClient` is exported as a singleton from `src/db.ts`. Soft-delete pattern: `Birthday.deletedAt`. `DeliveryLog` is the audit trail for sends and is the only notification-related table (a `ScheduledNotification` queue table existed in an earlier revision and has been dropped — see `prisma/migrations/`).
 
 ### TypeScript / ESM specifics
 - `"type": "module"` and `module: NodeNext` — relative imports inside `src/` **must** include the `.js` extension (e.g. `import { bot } from './bot.js'`) even though the source is `.ts`. Existing files all do this.
