@@ -6,4 +6,5 @@ dist
 .env.*
 coverage
 npm-debug.log
+pnpm-debug.log
 Dockerfile*

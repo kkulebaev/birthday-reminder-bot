@@ -64,18 +64,20 @@ Open `/menu` → `⚙️ Настройки` to update your timezone, notificati
 Node.js 24 is the target runtime for local development, CI, and Docker.
 Use `.nvmrc` if you manage Node versions with `nvm`.
 
+This project uses **pnpm** as the package manager (pinned via the `packageManager` field in `package.json`). Enable it via `corepack enable` if you don't already have pnpm installed.
+
 See `.env.example` for environment variables.
 
 Available scripts:
-- `npm run dev`
-- `npm run build`
-- `npm run start`
-- `npm run typecheck`
-- `npm run lint`
-- `npm run test`
-- `npm run prisma:generate`
-- `npm run prisma:migrate:dev`
-- `npm run prisma:migrate:deploy`
+- `pnpm dev`
+- `pnpm build`
+- `pnpm start`
+- `pnpm typecheck`
+- `pnpm lint`
+- `pnpm test`
+- `pnpm prisma:generate`
+- `pnpm prisma:migrate:dev`
+- `pnpm prisma:migrate:deploy`
 
 ## Docker
 

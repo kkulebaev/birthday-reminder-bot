@@ -4,20 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-Package manager: **npm** (package-lock.json is committed). Node 24+ is required (`.nvmrc`, `engines.node` and Docker base image all pin to Node 24).
+Package manager: **pnpm** (pinned via `packageManager` in `package.json`, `pnpm-lock.yaml` is committed). Enable with `corepack enable` if pnpm is not on `PATH`. Node 24+ is required (`.nvmrc`, `engines.node` and Docker base image all pin to Node 24).
 
-- `npm run dev` — run the webhook server with `tsx` (no build step)
-- `npm run build` — `tsc -p tsconfig.json` → `dist/`
-- `npm run start` — run the compiled `dist/server.js`
-- `npm run typecheck` — `tsc --noEmit` (strict, with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`)
-- `npm run lint` — `eslint .`
-- `npm run test` — `vitest run` (single run, not watch)
-- `npm run test:coverage` — vitest with v8 coverage
-- Run a single test file: `npx vitest run test/<file>.test.ts`
-- Run by name pattern: `npx vitest run -t "<pattern>"`
-- `npm run prisma:generate` — regenerate Prisma client (required after editing `prisma/schema.prisma`)
-- `npm run prisma:migrate:dev` — create/apply a dev migration
-- `npm run prisma:migrate:deploy` — apply pending migrations (production)
+- `pnpm dev` — run the webhook server with `tsx` (no build step)
+- `pnpm build` — `tsc -p tsconfig.json` → `dist/`
+- `pnpm start` — run the compiled `dist/server.js`
+- `pnpm typecheck` — `tsc --noEmit` (strict, with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`)
+- `pnpm lint` — `eslint .`
+- `pnpm test` — `vitest run` (single run, not watch)
+- `pnpm test:coverage` — vitest with v8 coverage
+- Run a single test file: `pnpm exec vitest run test/<file>.test.ts`
+- Run by name pattern: `pnpm exec vitest run -t "<pattern>"`
+- `pnpm prisma:generate` — regenerate Prisma client (required after editing `prisma/schema.prisma`)
+- `pnpm prisma:migrate:dev` — create/apply a dev migration
+- `pnpm prisma:migrate:deploy` — apply pending migrations (production)
 
 Required env vars: `TELEGRAM_BOT_TOKEN`, `DATABASE_URL` (PostgreSQL). Optional: `TELEGRAM_WEBHOOK_PATH` (default `/telegram/webhook`), `PORT` (default `3000`). See `.env.example`.
 

@@ -1,14 +1,15 @@
 FROM node:24-slim AS builder
 WORKDIR /app
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+RUN corepack enable
 
-COPY package.json package-lock.json ./
+COPY package.json pnpm-lock.yaml ./
 COPY prisma ./prisma
-RUN npm ci
+RUN pnpm install --frozen-lockfile
 
 COPY tsconfig.json ./
 COPY src ./src
-RUN npm run prisma:generate && npm run build && npm prune --omit=dev
+RUN pnpm run prisma:generate && pnpm run build && pnpm prune --prod
 
 FROM node:24-slim AS runner
 WORKDIR /app
@@ -16,7 +17,7 @@ ENV NODE_ENV=production
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/package-lock.json ./package-lock.json
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/dist ./dist
