@@ -13,7 +13,7 @@
   </a>
   <a href="https://github.com/kkulebaev/birthday-reminder-bot/actions/workflows/lint.yml">
     <img alt="Lint"
-         src="https://img.shields.io/github/actions/workflow/status/kkulebaev/birthday-reminder-bot/lint.yml?branch=main&label=lint&style=flat-square&logo=eslint&logoColor=white&color=8B5CF6" />
+         src="https://img.shields.io/github/actions/workflow/status/kkulebaev/birthday-reminder-bot/lint.yml?branch=main&label=lint&style=flat-square&logo=rust&logoColor=white&color=8B5CF6" />
   </a>
   <a href="https://github.com/kkulebaev/birthday-reminder-bot/actions/workflows/typecheck.yml">
     <img alt="Typecheck"
@@ -174,7 +174,7 @@ curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook?url=https://you
 | `pnpm build` | Compile to `dist/` |
 | `pnpm start` | Run the compiled `dist/server.js` |
 | `pnpm typecheck` | `tsc --noEmit` (strict) |
-| `pnpm lint` | `eslint .` |
+| `pnpm lint` | `oxlint` |
 | `pnpm test` | `vitest run` |
 | `pnpm test:coverage` | vitest + v8 coverage |
 | `pnpm prisma:generate` | Regenerate the Prisma client |

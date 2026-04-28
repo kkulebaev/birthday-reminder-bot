@@ -10,7 +10,7 @@ Package manager: **pnpm** (pinned via `packageManager` in `package.json`, `pnpm-
 - `pnpm build` — `tsc -p tsconfig.json` → `dist/`
 - `pnpm start` — run the compiled `dist/server.js`
 - `pnpm typecheck` — `tsc --noEmit` (strict, with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`)
-- `pnpm lint` — `eslint .`
+- `pnpm lint` — `oxlint` (config in `.oxlintrc.json`)
 - `pnpm test` — `vitest run` (single run, not watch)
 - `pnpm test:coverage` — vitest with v8 coverage
 - Run a single test file: `pnpm exec vitest run test/<file>.test.ts`
