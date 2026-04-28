@@ -23,6 +23,10 @@
     <img alt="Last commit"
          src="https://img.shields.io/github/last-commit/kkulebaev/birthday-reminder-bot?style=flat-square&logo=git&logoColor=white&color=64748B" />
   </a>
+  <a href="./LICENSE">
+    <img alt="License: MIT"
+         src="https://img.shields.io/badge/license-MIT-A58CFF?style=flat-square" />
+  </a>
 </p>
 
 <p>
@@ -230,5 +234,9 @@ test/                      # vitest specs
 - Conventional Commits (`feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `build`, `ci`, `revert`). Description: short, imperative, lowercase, no trailing period. No body.
 - TypeScript is strict, with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`.
 - Relative imports inside `src/` use `.js` extensions (NodeNext ESM).
+
+## 📄 License
+
+[MIT](./LICENSE) © Konstantin Kulebaev.
 
 <sub>Made with quiet evenings, Telegram, and a small planet called Lumen.</sub>
