@@ -60,7 +60,7 @@ function parseNotifyAt(notifyAt: string): { hour: number; minute: number } {
 export function buildBirthdayCronExpression(input: { month: number; day: number; notifyAt: string }): string {
   const { hour, minute } = parseNotifyAt(input.notifyAt)
 
-  return `${minute} ${hour} ${input.day} ${input.month} *`
+  return `0 ${minute} ${hour} ${input.day} ${input.month} *`
 }
 
 function buildBirthdayJobPayload(input: BirthdayJobInput): DkronJob {
