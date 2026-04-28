@@ -1,100 +1,234 @@
-# 🎂 Birthday Reminder Bot — Lumen
+<div align="center">
 
-![Birthday Reminder Bot — Lumen](./assets/banner.svg)
+<img src="./assets/banner.svg" alt="Birthday Reminder Bot — Lumen" width="100%" />
 
-[![Test](https://github.com/kkulebaev/birthday-reminder-bot/actions/workflows/test.yml/badge.svg)](https://github.com/kkulebaev/birthday-reminder-bot/actions/workflows/test.yml)
-[![Lint](https://github.com/kkulebaev/birthday-reminder-bot/actions/workflows/lint.yml/badge.svg)](https://github.com/kkulebaev/birthday-reminder-bot/actions/workflows/lint.yml)
-[![Typecheck](https://github.com/kkulebaev/birthday-reminder-bot/actions/workflows/typecheck.yml/badge.svg)](https://github.com/kkulebaev/birthday-reminder-bot/actions/workflows/typecheck.yml)
-[![Last Commit](https://img.shields.io/github/last-commit/kkulebaev/birthday-reminder-bot)](https://github.com/kkulebaev/birthday-reminder-bot/commits/main)
-[![Top Language](https://img.shields.io/github/languages/top/kkulebaev/birthday-reminder-bot)](https://github.com/kkulebaev/birthday-reminder-bot)
+<h1>🎂 Birthday Reminder Bot — Lumen</h1>
 
-> A calm Telegram-first assistant for remembering important birthdays and important dates.
+<p><i>A calm Telegram-first assistant for remembering important birthdays — and important dates.</i></p>
 
-Birthday Reminder Bot — Lumen helps you keep important birthdays in one place and reminds you about them at the right time.
+<p>
+  <a href="https://github.com/kkulebaev/birthday-reminder-bot/actions/workflows/test.yml">
+    <img alt="Tests"
+         src="https://img.shields.io/github/actions/workflow/status/kkulebaev/birthday-reminder-bot/test.yml?branch=main&label=tests&style=flat-square&logo=vitest&logoColor=white&color=2DD4BF" />
+  </a>
+  <a href="https://github.com/kkulebaev/birthday-reminder-bot/actions/workflows/lint.yml">
+    <img alt="Lint"
+         src="https://img.shields.io/github/actions/workflow/status/kkulebaev/birthday-reminder-bot/lint.yml?branch=main&label=lint&style=flat-square&logo=eslint&logoColor=white&color=8B5CF6" />
+  </a>
+  <a href="https://github.com/kkulebaev/birthday-reminder-bot/actions/workflows/typecheck.yml">
+    <img alt="Typecheck"
+         src="https://img.shields.io/github/actions/workflow/status/kkulebaev/birthday-reminder-bot/typecheck.yml?branch=main&label=typecheck&style=flat-square&logo=typescript&logoColor=white&color=3178C6" />
+  </a>
+  <a href="https://github.com/kkulebaev/birthday-reminder-bot/commits/main">
+    <img alt="Last commit"
+         src="https://img.shields.io/github/last-commit/kkulebaev/birthday-reminder-bot?style=flat-square&logo=git&logoColor=white&color=64748B" />
+  </a>
+</p>
 
-## What it does
+<p>
+  <img alt="Node 24+"
+       src="https://img.shields.io/badge/node-%E2%89%A524-339933?style=flat-square&logo=nodedotjs&logoColor=white" />
+  <img alt="TypeScript"
+       src="https://img.shields.io/badge/typescript-strict-3178C6?style=flat-square&logo=typescript&logoColor=white" />
+  <img alt="pnpm"
+       src="https://img.shields.io/badge/pnpm-10-F69220?style=flat-square&logo=pnpm&logoColor=white" />
+  <img alt="grammY"
+       src="https://img.shields.io/badge/grammY-1.x-26A5E4?style=flat-square&logo=telegram&logoColor=white" />
+  <img alt="Prisma"
+       src="https://img.shields.io/badge/prisma-6.x-2D3748?style=flat-square&logo=prisma&logoColor=white" />
+  <img alt="PostgreSQL"
+       src="https://img.shields.io/badge/postgres-16-336791?style=flat-square&logo=postgresql&logoColor=white" />
+  <img alt="Express"
+       src="https://img.shields.io/badge/express-5-000000?style=flat-square&logo=express&logoColor=white" />
+  <img alt="Dkron"
+       src="https://img.shields.io/badge/dkron-scheduler-7C5CFF?style=flat-square&logo=apacheairflow&logoColor=white" />
+  <img alt="Vitest"
+       src="https://img.shields.io/badge/vitest-3-6E9F18?style=flat-square&logo=vitest&logoColor=white" />
+</p>
 
-- helps you save birthdays in a simple Telegram flow
-- shows upcoming birthdays in one main screen
-- lets you quickly open and edit each birthday card
-- sends reminders on the birthday itself
-- supports per-user notification time and timezone settings
-- keeps the next reminder scheduled inside the live bot process, without a separate cron poller
+</div>
 
-## Main flows
+---
+
+## ✨ What it is
+
+**Lumen** is a Telegram bot that does one thing well: it keeps the birthdays that matter to you and gently nudges you when the day comes — at *your* time, in *your* timezone.
+
+- 📒 Save birthdays through a friendly step-by-step flow
+- 🗓 Browse upcoming dates from a single screen, page by page
+- 🎈 Open and edit each birthday card inline (rename, set date, add a note)
+- 🔔 Receive a reminder on the day, with quick actions on the message itself
+- 🌍 Per-user notification time and IANA timezone
+- ♻️ Schedule survives restarts — jobs live in [dkron](https://dkron.io/), not in process memory
+
+## 🏃 At a glance
+
+```
+You: /add
+Lumen: Как зовут именинника?
+You: Мама
+Lumen: В каком месяце родилась? [Янв] [Фев] [Мар] …
+You: Май
+Lumen: Какого числа?
+You: 17
+Lumen: ✨ Сохранил. Напомню 17 мая в 09:00 (Europe/Moscow).
+```
+
+## 🧭 Main flows
 
 ### Add a birthday
-Use `/add` or open `/menu` and follow the step-by-step flow. Each step includes a back button so you can return and edit previous answers before saving.
+Use `/add` or open `/menu` and follow the step-by-step flow. Every step has a back button so you can revisit earlier answers before saving.
 
 ### Check upcoming birthdays
-Use `/upcoming` to see the nearest important dates, move between pages with arrow buttons, and open any birthday card from there.
+`/upcoming` shows the nearest important dates, paginated. Open any card from there.
 
 ### Find a person quickly
-Use `/search <name>` to find a birthday card by name.
+`/search <name>` resolves a card by name. Ambiguous matches surface a picker.
 
 ### Manage reminder settings
-Open `/menu` → `⚙️ Настройки` to update your timezone, notification time, or reminder preferences.
+`/menu` → **⚙️ Настройки** to update timezone, notification time, or to toggle reminders entirely.
 
-## Main commands
+## 🤖 Commands
 
-- `/start`
-- `/menu`
-- `/add`
-- `/upcoming`
-- `/search <name>`
-- `/view <name>`
-- `/note <name> | <text>`
-- `/toggle <name>`
-- `/rename <name> | <new name>`
-- `/setdate <name> | <DD.MM or DD.MM.YYYY>`
-- `/delete <name>`
-- `/cancel`
+| Command | What it does |
+| --- | --- |
+| `/start` | Greeting + onboarding defaults |
+| `/menu` | The main hub for everyday use |
+| `/help` | A short cheat sheet |
+| `/add` | Start the add-birthday wizard |
+| `/upcoming` | List the nearest birthdays |
+| `/search <name>` | Find a card by name |
+| `/view <name>` | Open a birthday card |
+| `/note <name> \| <text>` | Replace the note on a card |
+| `/rename <name> \| <new name>` | Rename a card |
+| `/setdate <name> \| <DD.MM[.YYYY]>` | Change the date |
+| `/toggle <name>` | Enable / disable the reminder for one person |
+| `/delete <name>` | Soft-delete a card |
+| `/cancel` | Drop the active wizard / inline edit |
 
-## Product notes
+User-facing text is in Russian; keep that tone if you contribute new strings.
 
-- `/menu` is the main entry point for everyday use
-- `/upcoming` is the primary list screen
-- birthday cards support quick actions like edit, delete, and reminder toggle
-- reminders include inline actions to open the card or disable reminders directly
-- settings support timezone presets, manual timezone entry, quick time presets, and notification toggle
-- reminder delivery uses a database-backed in-process scheduler that restores overdue jobs after restart
+## 🏗 Architecture
 
-## Development
+Lumen is **one** Express webhook server. It does not run an in-process scheduler — reminder timing is owned by an external **[dkron](https://dkron.io/)** instance, which fires HTTP callbacks back into the bot.
 
-Node.js 24 is the target runtime for local development, CI, and Docker.
-Use `.nvmrc` if you manage Node versions with `nvm`.
+```
+┌──────────────┐  webhook   ┌──────────────────────────────┐  HTTP   ┌────────────┐
+│  Telegram    │ ─────────▶ │  birthday-reminder-bot       │ ─────▶  │   dkron    │
+│              │            │  Express + grammY + Prisma   │ ◀─────  │  scheduler │
+└──────────────┘            └──────────────────────────────┘  fire   └────────────┘
+                                       │  reads / writes
+                                       ▼
+                               ┌──────────────┐
+                               │ PostgreSQL   │
+                               └──────────────┘
+```
 
-This project uses **pnpm** as the package manager (pinned via the `packageManager` field in `package.json`). Enable it via `corepack enable` if you don't already have pnpm installed.
+- **Birthday create / update / toggle / delete** → `schedulerService.rebuildBirthdayNotification()` → `POST /v1/jobs` to dkron (or `DELETE` if the reminder should be off).
+- **A job fires** → dkron does `POST /internal/fire-reminder` with `{ "birthdayId": "…" }` → the bot resolves the latest state, sends the Telegram message, and writes a `DeliveryLog` row.
+- One dkron job per active birthday, named `bday-<id>`. The cron expression is **6-field** (`seconds minute hour day month *`) and the job's `timezone` is set to the user's IANA zone, so dkron evaluates the local time directly.
+- Same-day duplicates are absorbed by `DeliveryLog`'s unique key on `(userId, birthdayId, notificationType, occurrenceDate)`.
 
-See `.env.example` for environment variables.
+For deeper context, see [`CLAUDE.md`](./CLAUDE.md).
 
-Available scripts:
-- `pnpm dev`
-- `pnpm build`
-- `pnpm start`
-- `pnpm typecheck`
-- `pnpm lint`
-- `pnpm test`
-- `pnpm prisma:generate`
-- `pnpm prisma:migrate:dev`
-- `pnpm prisma:migrate:deploy`
+## 🚀 Getting started
 
-## Docker
+### Requirements
 
-Build the image:
+- **Node.js 24+** (pinned in `package.json` and the Docker image)
+- **pnpm 10** — enable via `corepack enable`
+- **PostgreSQL** reachable via `DATABASE_URL`
+- **dkron** reachable via `DKRON_API_URL`
+
+### Install & run (local)
+
+```bash
+corepack enable
+pnpm install
+cp .env.example .env   # then fill in the required values
+pnpm prisma:migrate:dev
+pnpm dev               # tsx src/server.ts
+```
+
+The server listens on `PORT` (default `3000`) and exposes `GET /healthz`.
+
+### Environment variables
+
+| Var | Required | Notes |
+| --- | :---: | --- |
+| `TELEGRAM_BOT_TOKEN` | ✅ | From [@BotFather](https://t.me/BotFather). |
+| `DATABASE_URL` | ✅ | PostgreSQL URL (`postgresql://…`). |
+| `DKRON_API_URL` | ✅ | e.g. `http://dkron:8080`. |
+| `INTERNAL_WEBHOOK_SECRET` | ✅ | Shared secret between dkron jobs and `/internal/fire-reminder` (`X-Internal-Auth`). |
+| `BOT_INTERNAL_URL` *or* `RAILWAY_PRIVATE_DOMAIN` | ✅* | How dkron reaches the bot. One of them must be set on startup. |
+| `TELEGRAM_WEBHOOK_PATH` | — | Defaults to `/telegram/webhook`. |
+| `PORT` | — | Defaults to `3000`. |
+
+### Telegram webhook
+
+Lumen does not long-poll. Point Telegram at the public URL of `<host><TELEGRAM_WEBHOOK_PATH>`:
+
+```bash
+curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook?url=https://your-host.example/telegram/webhook"
+```
+
+## 🧪 Scripts
+
+| Script | What it does |
+| --- | --- |
+| `pnpm dev` | Run the server with `tsx` (no build) |
+| `pnpm build` | Compile to `dist/` |
+| `pnpm start` | Run the compiled `dist/server.js` |
+| `pnpm typecheck` | `tsc --noEmit` (strict) |
+| `pnpm lint` | `eslint .` |
+| `pnpm test` | `vitest run` |
+| `pnpm test:coverage` | vitest + v8 coverage |
+| `pnpm prisma:generate` | Regenerate the Prisma client |
+| `pnpm prisma:migrate:dev` | Create / apply a dev migration |
+| `pnpm prisma:migrate:deploy` | Apply pending migrations (production) |
+
+Run a single test file:
+
+```bash
+pnpm exec vitest run test/<file>.test.ts
+# or by name:
+pnpm exec vitest run -t "<pattern>"
+```
+
+## 🐳 Docker
 
 ```bash
 docker build -t birthday-reminder-bot .
-```
-
-Run the container:
-
-```bash
 docker run --rm \
   --env-file .env \
   -p 3000:3000 \
   birthday-reminder-bot
 ```
 
-The container starts the webhook server and in-process reminder scheduler together.
-Run Prisma migrations before starting the container in production.
+The container starts the webhook server only — bring your own Postgres and your own dkron. Run Prisma migrations before starting the container in production.
+
+## 📁 Project layout
+
+```
+src/
+├── server.ts              # Express entrypoint + /internal/fire-reminder
+├── bot.ts                 # grammY router (commands, callbacks, text)
+├── scheduler-service.ts   # syncs Birthdays into dkron jobs
+├── dkron-client.ts        # thin wrapper over dkron's HTTP API
+├── add-birthday.ts        # add wizard (in-memory state)
+├── birthday-inline-edit.ts# rename / setdate / note (in-memory state)
+├── settings.ts            # timezone & notify-time editor
+└── …
+prisma/
+├── schema.prisma
+└── migrations/
+test/                      # vitest specs
+```
+
+## 🤝 Contributing
+
+- Conventional Commits (`feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `build`, `ci`, `revert`). Description: short, imperative, lowercase, no trailing period. No body.
+- TypeScript is strict, with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`.
+- Relative imports inside `src/` use `.js` extensions (NodeNext ESM).
+
+<sub>Made with quiet evenings, Telegram, and a small planet called Lumen.</sub>
