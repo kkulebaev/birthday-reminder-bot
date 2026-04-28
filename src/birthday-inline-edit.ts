@@ -1,4 +1,5 @@
 import type { Context } from 'grammy'
+import { isLeapDayBirthday, LEAP_DAY_REJECTION_MESSAGE } from './add-birthday.js'
 import { prisma } from './db.js'
 import { schedulerService } from './scheduler-service.js'
 
@@ -146,6 +147,10 @@ export async function handleInlineEditText(ctx: Context, userId: string, text: s
 
   if (!parsedDate) {
     return { kind: 'invalid', message: 'Дата должна быть в формате DD.MM или DD.MM.YYYY.' }
+  }
+
+  if (isLeapDayBirthday(parsedDate.day, parsedDate.month)) {
+    return { kind: 'invalid', message: LEAP_DAY_REJECTION_MESSAGE }
   }
 
   await prisma.birthday.update({

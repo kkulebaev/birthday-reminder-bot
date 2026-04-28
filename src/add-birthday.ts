@@ -72,6 +72,12 @@ export function validateMonth(value: number): boolean {
   return value >= 1 && value <= 12
 }
 
+export function isLeapDayBirthday(day: number, month: number): boolean {
+  return day === 29 && month === 2
+}
+
+export const LEAP_DAY_REJECTION_MESSAGE = 'Извини, 29 февраля как день рождения не поддерживается. Выбери 28 февраля или 1 марта.'
+
 export function validateBirthYear(value: number): boolean {
   return value >= 1900 && value <= 2100
 }
@@ -415,6 +421,10 @@ export function selectAddBirthdayMonth(ctx: Context, month: number): string {
     return 'Месяц должен быть от 1 до 12.'
   }
 
+  if (session.draft.day !== undefined && isLeapDayBirthday(session.draft.day, month)) {
+    return LEAP_DAY_REJECTION_MESSAGE
+  }
+
   const updatedDraft = {
     ...session.draft,
     month,
@@ -519,6 +529,13 @@ export async function handleAddBirthdayText(
     if (month === null || !validateMonth(month)) {
       return {
         text: 'Выбери месяц кнопкой ниже или отправь число от 1 до 12.',
+        completed: false,
+      }
+    }
+
+    if (session.draft.day !== undefined && isLeapDayBirthday(session.draft.day, month)) {
+      return {
+        text: LEAP_DAY_REJECTION_MESSAGE,
         completed: false,
       }
     }
