@@ -78,3 +78,11 @@ model DeliveryLog {
   @@unique([userId, birthdayId, notificationType, occurrenceDate])
   @@map("delivery_logs")
 }
+
+model ProcessedUpdate {
+  updateId  BigInt   @id @map("update_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("processed_updates")
+}

@@ -7,6 +7,7 @@ import { verifyInternalAuth } from './internal-auth.js'
 import { formatBirthdayNotification, getBirthdayNotificationKeyboard } from './notification-format.js'
 import { schedulerService } from './scheduler-service.js'
 import { getSafeErrorMessage } from './telegram-api.js'
+import { markUpdateProcessed, pruneOldProcessedUpdates, rollbackProcessedUpdate } from './webhook-dedup.js'
 import { DeliveryStatus } from './generated/prisma/client.js'
 
 function getOccurrenceDateUtc(now: Date): Date {
@@ -134,6 +135,37 @@ async function handleFireReminder(req: Request, res: Response): Promise<void> {
   }
 }
 
+async function handleTelegramWebhook(req: Request, res: Response): Promise<void> {
+  const update = req.body as { update_id?: number }
+  const updateId = update?.update_id
+
+  if (typeof updateId !== 'number') {
+    res.sendStatus(400)
+    return
+  }
+
+  const dedup = await markUpdateProcessed(updateId)
+
+  if (dedup === 'duplicate') {
+    res.sendStatus(200)
+    return
+  }
+
+  if (dedup === 'error') {
+    res.sendStatus(500)
+    return
+  }
+
+  try {
+    await bot.handleUpdate(req.body)
+    res.sendStatus(200)
+  } catch (error) {
+    console.error('Webhook handler error', getSafeErrorMessage(error))
+    await rollbackProcessedUpdate(updateId)
+    res.sendStatus(500)
+  }
+}
+
 function createApp() {
   const app = express()
 
@@ -143,14 +175,8 @@ function createApp() {
     res.status(200).send('ok')
   })
 
-  app.post(env.TELEGRAM_WEBHOOK_PATH, async (req: Request, res: Response) => {
-    try {
-      await bot.handleUpdate(req.body)
-      res.sendStatus(200)
-    } catch (error) {
-      console.error('Webhook handler error', getSafeErrorMessage(error))
-      res.sendStatus(500)
-    }
+  app.post(env.TELEGRAM_WEBHOOK_PATH, (req, res) => {
+    void handleTelegramWebhook(req, res)
   })
 
   app.post('/internal/fire-reminder', (req, res) => {
@@ -166,6 +192,7 @@ export async function startServer(): Promise<void> {
 
   await bot.init()
   await schedulerService.start()
+  await pruneOldProcessedUpdates()
 
   await new Promise<void>((resolve) => {
     app.listen(port, '::', () => {
