@@ -2,10 +2,17 @@ import type { Context } from 'grammy'
 import { isLeapDayBirthday, LEAP_DAY_REJECTION_MESSAGE } from './add-birthday.js'
 import { prisma } from './db.js'
 import { schedulerService } from './scheduler-service.js'
+import {
+  clearSession,
+  getTelegramUserKey,
+  loadSessionPayload,
+  upsertSession,
+  WizardKind,
+} from './wizard-session.js'
 
 type InlineEditMode = 'note' | 'rename' | 'setdate'
 
-type InlineEditSession = {
+export type InlineEditSession = {
   birthdayId: string
   mode: InlineEditMode
 }
@@ -14,18 +21,6 @@ export type InlineEditResult =
   | { kind: 'missing'; message: string }
   | { kind: 'invalid'; message: string }
   | { kind: 'updated'; birthdayId: string; message: string }
-
-const sessions = new Map<string, InlineEditSession>()
-
-function getUserKey(ctx: Context): string {
-  const from = ctx.from
-
-  if (!from) {
-    throw new Error('Sender is missing in context')
-  }
-
-  return String(from.id)
-}
 
 function parseInteger(value: string): number | null {
   if (!/^\d+$/.test(value)) {
@@ -75,8 +70,8 @@ function parseDateInput(value: string): { day: number; month: number; birthYear:
   }
 }
 
-export function beginInlineEdit(ctx: Context, birthdayId: string, mode: InlineEditMode): string {
-  sessions.set(getUserKey(ctx), { birthdayId, mode })
+export async function beginInlineEdit(ctx: Context, birthdayId: string, mode: InlineEditMode): Promise<string> {
+  await upsertSession(getTelegramUserKey(ctx), WizardKind.inline_edit, { birthdayId, mode })
 
   if (mode === 'note') {
     return 'Отправь новую заметку одним сообщением.'
@@ -89,16 +84,18 @@ export function beginInlineEdit(ctx: Context, birthdayId: string, mode: InlineEd
   return 'Отправь новую дату в формате DD.MM или DD.MM.YYYY.'
 }
 
-export function cancelInlineEdit(ctx: Context): boolean {
-  return sessions.delete(getUserKey(ctx))
+export async function cancelInlineEdit(ctx: Context): Promise<boolean> {
+  return clearSession(getTelegramUserKey(ctx), WizardKind.inline_edit)
 }
 
-export function hasInlineEditSession(ctx: Context): boolean {
-  return sessions.has(getUserKey(ctx))
+export async function hasInlineEditSession(ctx: Context): Promise<boolean> {
+  const session = await loadSessionPayload<InlineEditSession>(getTelegramUserKey(ctx), WizardKind.inline_edit)
+  return session !== null
 }
 
 export async function handleInlineEditText(ctx: Context, userId: string, text: string): Promise<InlineEditResult> {
-  const session = sessions.get(getUserKey(ctx))
+  const key = getTelegramUserKey(ctx)
+  const session = await loadSessionPayload<InlineEditSession>(key, WizardKind.inline_edit)
 
   if (!session) {
     return { kind: 'missing', message: 'Сейчас нечего редактировать.' }
@@ -113,7 +110,7 @@ export async function handleInlineEditText(ctx: Context, userId: string, text: s
   })
 
   if (!birthday) {
-    sessions.delete(getUserKey(ctx))
+    await clearSession(key, WizardKind.inline_edit)
     return { kind: 'missing', message: 'Не нашёл такую запись.' }
   }
 
@@ -123,7 +120,7 @@ export async function handleInlineEditText(ctx: Context, userId: string, text: s
       data: { notes: text.trim() || null },
     })
 
-    sessions.delete(getUserKey(ctx))
+    await clearSession(key, WizardKind.inline_edit)
     return { kind: 'updated', birthdayId: birthday.id, message: 'Готово, заметку обновил.' }
   }
 
@@ -139,7 +136,7 @@ export async function handleInlineEditText(ctx: Context, userId: string, text: s
       data: { fullName },
     })
 
-    sessions.delete(getUserKey(ctx))
+    await clearSession(key, WizardKind.inline_edit)
     return { kind: 'updated', birthdayId: birthday.id, message: 'Готово, имя обновил.' }
   }
 
@@ -163,6 +160,6 @@ export async function handleInlineEditText(ctx: Context, userId: string, text: s
   })
 
   await schedulerService.rebuildBirthdayNotification(birthday.id)
-  sessions.delete(getUserKey(ctx))
+  await clearSession(key, WizardKind.inline_edit)
   return { kind: 'updated', birthdayId: birthday.id, message: 'Готово, дату обновил.' }
 }

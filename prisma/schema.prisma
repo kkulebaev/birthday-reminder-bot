@@ -86,3 +86,21 @@ model ProcessedUpdate {
   @@index([createdAt])
   @@map("processed_updates")
 }
+
+enum WizardKind {
+  add_birthday
+  inline_edit
+  settings_edit
+}
+
+model WizardSession {
+  userId    String     @map("user_id")
+  kind      WizardKind
+  payload   Json
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  @@id([userId, kind])
+  @@index([updatedAt])
+  @@map("wizard_sessions")
+}

@@ -46,7 +46,7 @@ export async function handleMainMenuCallback(ctx: Context, userId: string, data:
   }
 
   if (data === 'menu:add') {
-    await ctx.reply(beginAddBirthdayFlow(ctx))
+    await ctx.reply(await beginAddBirthdayFlow(ctx))
     await ctx.answerCallbackQuery()
     return true
   }

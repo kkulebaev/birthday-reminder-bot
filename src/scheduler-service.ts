@@ -1,6 +1,7 @@
 import { prisma } from './db.js'
 import { deleteBirthdayJob, pingDkron, upsertBirthdayJob } from './dkron-client.js'
 import { env } from './env.js'
+import { reapStaleSessions } from './wizard-session.js'
 
 const FIRE_REMINDER_PATH = '/internal/fire-reminder'
 
@@ -79,6 +80,8 @@ async function loadReminderTarget(birthdayId: string): Promise<ReminderTarget | 
 
 export class SchedulerService {
   async start(): Promise<void> {
+    await reapStaleSessions(60)
+
     const reachable = await pingDkron()
 
     if (!reachable) {

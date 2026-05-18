@@ -1,10 +1,17 @@
 import { InlineKeyboard, type Context } from 'grammy'
 import { prisma } from './db.js'
 import { schedulerService } from './scheduler-service.js'
+import {
+  clearSession,
+  getTelegramUserKey,
+  loadSessionPayload,
+  upsertSession,
+  WizardKind,
+} from './wizard-session.js'
 
 export type SettingsEditMode = 'timezone' | 'notifyAt'
 
-type SettingsSession = {
+export type SettingsSession = {
   mode: SettingsEditMode
 }
 
@@ -27,18 +34,6 @@ export const TIMEZONE_PRESETS = [
   { label: '🇦🇪 Dubai', value: 'Asia/Dubai' },
   { label: '🇺🇸 New York', value: 'America/New_York' },
 ] as const
-
-const sessions = new Map<string, SettingsSession>()
-
-function getUserKey(ctx: Context): string {
-  const from = ctx.from
-
-  if (!from) {
-    throw new Error('Sender is missing in context')
-  }
-
-  return String(from.id)
-}
 
 function formatNotificationsEnabled(value: boolean): string {
   return value ? 'включены' : 'выключены'
@@ -126,8 +121,8 @@ export function getTimezonePickerText(): string {
   ].join('\n')
 }
 
-export function beginSettingsEdit(ctx: Context, mode: SettingsEditMode): string {
-  sessions.set(getUserKey(ctx), { mode })
+export async function beginSettingsEdit(ctx: Context, mode: SettingsEditMode): Promise<string> {
+  await upsertSession(getTelegramUserKey(ctx), WizardKind.settings_edit, { mode })
 
   if (mode === 'timezone') {
     return [
@@ -145,12 +140,13 @@ export function beginSettingsEdit(ctx: Context, mode: SettingsEditMode): string 
   ].join('\n')
 }
 
-export function hasSettingsEditSession(ctx: Context): boolean {
-  return sessions.has(getUserKey(ctx))
+export async function hasSettingsEditSession(ctx: Context): Promise<boolean> {
+  const session = await loadSessionPayload<SettingsSession>(getTelegramUserKey(ctx), WizardKind.settings_edit)
+  return session !== null
 }
 
-export function cancelSettingsEdit(ctx: Context): boolean {
-  return sessions.delete(getUserKey(ctx))
+export async function cancelSettingsEdit(ctx: Context): Promise<boolean> {
+  return clearSession(getTelegramUserKey(ctx), WizardKind.settings_edit)
 }
 
 export function isValidNotifyTime(value: string): boolean {
@@ -222,7 +218,8 @@ export async function setTimezonePreset(userId: string, timezone: string): Promi
 }
 
 export async function handleSettingsEditText(ctx: Context, userId: string, text: string): Promise<SettingsEditResult> {
-  const session = sessions.get(getUserKey(ctx))
+  const key = getTelegramUserKey(ctx)
+  const session = await loadSessionPayload<SettingsSession>(key, WizardKind.settings_edit)
 
   if (!session) {
     return { kind: 'missing', message: 'Сейчас нечего менять в настройках.' }
@@ -249,7 +246,7 @@ export async function handleSettingsEditText(ctx: Context, userId: string, text:
     })
 
     await schedulerService.rebuildUserNotifications(userId)
-    sessions.delete(getUserKey(ctx))
+    await clearSession(key, WizardKind.settings_edit)
     return { kind: 'updated', message: 'Готово, часовой пояс обновил.' }
   }
 
@@ -263,6 +260,6 @@ export async function handleSettingsEditText(ctx: Context, userId: string, text:
   })
 
   await schedulerService.rebuildUserNotifications(userId)
-  sessions.delete(getUserKey(ctx))
+  await clearSession(key, WizardKind.settings_edit)
   return { kind: 'updated', message: 'Готово, время уведомления обновил.' }
 }

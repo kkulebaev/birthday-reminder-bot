@@ -1,7 +1,6 @@
 import { Bot, type Context, type InlineKeyboard } from 'grammy'
 import {
   beginAddBirthdayFlow,
-  cancelAddBirthdayFlow,
   canPickAddBirthdayMonth,
   canSkipAddBirthdayStep,
   getAddBirthdayOptionalKeyboard,
@@ -30,7 +29,7 @@ import {
   sendBirthdayDetail,
   sendUpdatedBirthdayDetail,
 } from './birthday-callbacks.js'
-import { cancelInlineEdit, handleInlineEditText, hasInlineEditSession } from './birthday-inline-edit.js'
+import { handleInlineEditText } from './birthday-inline-edit.js'
 import { env } from './env.js'
 import { formatStartMessage } from './format.js'
 import { formatHelpMessage } from './help.js'
@@ -39,12 +38,10 @@ import { notificationBot } from './notification-bot.js'
 import { getBirthdaySearchResult } from './search-birthdays.js'
 import {
   beginSettingsEdit,
-  cancelSettingsEdit,
   getSettingsMessage,
   getTimezonePickerKeyboard,
   getTimezonePickerText,
   handleSettingsEditText,
-  hasSettingsEditSession,
   setNotifyTimePreset,
   setTimezonePreset,
   toggleNotificationsEnabled,
@@ -53,11 +50,12 @@ import { sendTestNotification } from './test-notification.js'
 import { getSafeErrorMessage, safeEditMessageText } from './telegram-api.js'
 import { getUpcomingBirthdaysMessage } from './upcoming-birthdays.js'
 import { isPrivateChat, upsertUserFromContext } from './user.js'
+import { clearAllSessions, getTelegramUserKey, loadActiveSessions } from './wizard-session.js'
 
 export const bot = new Bot(env.TELEGRAM_BOT_TOKEN)
 
 async function replyWithOptionalKeyboard(ctx: Context, text: string): Promise<void> {
-  const keyboard = getAddBirthdayOptionalKeyboard(ctx)
+  const keyboard = await getAddBirthdayOptionalKeyboard(ctx)
 
   if (keyboard) {
     await ctx.reply(text, { reply_markup: keyboard })
@@ -103,7 +101,7 @@ async function handleBirthdayActionSelection(
 
   if (action === 'note') {
     await ctx.reply('Выбрал запись. Теперь отправь новую заметку одним сообщением.')
-    await ctx.reply(beginInlineEdit(ctx, birthdayId, 'note'))
+    await ctx.reply(await beginInlineEdit(ctx, birthdayId, 'note'))
     return
   }
 
@@ -123,12 +121,12 @@ async function handleBirthdayActionSelection(
 
   if (action === 'rename') {
     await ctx.reply('Выбрал запись. Теперь отправь новое имя одним сообщением.')
-    await ctx.reply(beginInlineEdit(ctx, birthdayId, 'rename'))
+    await ctx.reply(await beginInlineEdit(ctx, birthdayId, 'rename'))
     return
   }
 
   await ctx.reply('Выбрал запись. Теперь отправь новую дату в формате DD.MM или DD.MM.YYYY.')
-  await ctx.reply(beginInlineEdit(ctx, birthdayId, 'setdate'))
+  await ctx.reply(await beginInlineEdit(ctx, birthdayId, 'setdate'))
 }
 
 bot.command('start', async (ctx) => {
@@ -176,7 +174,7 @@ bot.command('add', async (ctx) => {
   }
 
   await upsertUserFromContext(ctx)
-  await ctx.reply(beginAddBirthdayFlow(ctx))
+  await ctx.reply(await beginAddBirthdayFlow(ctx))
 })
 
 bot.command('upcoming', async (ctx) => {
@@ -309,17 +307,18 @@ bot.command('cancel', async (ctx) => {
     return
   }
 
-  const inlineCancelled = cancelInlineEdit(ctx)
-  const settingsCancelled = cancelSettingsEdit(ctx)
-  const wizardCancelled = cancelAddBirthdayFlow(ctx)
+  const key = getTelegramUserKey(ctx)
+  const active = await loadActiveSessions(key)
+  const wasActive = Boolean(active.addFlow ?? active.inlineEdit ?? active.settingsEdit)
 
-  if (inlineCancelled || settingsCancelled || wizardCancelled) {
-    await ctx.reply('Ок, отменил текущее действие.')
-    await sendMainMenu(ctx)
+  if (!wasActive) {
+    await ctx.reply('Сейчас нечего отменять.')
     return
   }
 
-  await ctx.reply('Сейчас нечего отменять.')
+  await clearAllSessions(key)
+  await ctx.reply('Ок, отменил текущее действие.')
+  await sendMainMenu(ctx)
 })
 
 bot.on('callback_query:data', async (ctx) => {
@@ -331,7 +330,7 @@ bot.on('callback_query:data', async (ctx) => {
   const data = ctx.callbackQuery.data
 
   if (data === 'birthday:add:skip') {
-    if (!canSkipAddBirthdayStep(ctx)) {
+    if (!(await canSkipAddBirthdayStep(ctx))) {
       await ctx.answerCallbackQuery({ text: 'Сейчас нечего пропускать' })
       return
     }
@@ -352,12 +351,12 @@ bot.on('callback_query:data', async (ctx) => {
 
 
   if (data === 'birthday:add:back') {
-    if (!isAddBirthdayFlowActive(ctx)) {
+    if (!(await isAddBirthdayFlowActive(ctx))) {
       await ctx.answerCallbackQuery({ text: 'Сейчас возвращаться некуда' })
       return
     }
 
-    const result = goBackAddBirthdayStep(ctx)
+    const result = await goBackAddBirthdayStep(ctx)
     await ctx.answerCallbackQuery({ text: result.exited ? 'Открываю меню' : 'Возвращаю назад' })
 
     if (result.exited) {
@@ -370,14 +369,14 @@ bot.on('callback_query:data', async (ctx) => {
   }
 
   if (data.startsWith('birthday:add:month:')) {
-    if (!canPickAddBirthdayMonth(ctx)) {
+    if (!(await canPickAddBirthdayMonth(ctx))) {
       await ctx.answerCallbackQuery({ text: 'Сейчас месяц выбрать нельзя' })
       return
     }
 
     const month = Number(data.replace('birthday:add:month:', ''))
     await ctx.answerCallbackQuery({ text: 'Месяц выбран' })
-    await replyWithOptionalKeyboard(ctx, selectAddBirthdayMonth(ctx, month))
+    await replyWithOptionalKeyboard(ctx, await selectAddBirthdayMonth(ctx, month))
     return
   }
 
@@ -414,7 +413,7 @@ bot.on('callback_query:data', async (ctx) => {
 
   if (data === 'settings:edit-timezone-manual') {
     await ctx.answerCallbackQuery({ text: 'Жду часовой пояс' })
-    await ctx.reply(beginSettingsEdit(ctx, 'timezone'))
+    await ctx.reply(await beginSettingsEdit(ctx, 'timezone'))
     return
   }
 
@@ -434,7 +433,7 @@ bot.on('callback_query:data', async (ctx) => {
 
   if (data === 'settings:edit-notifyAt') {
     await ctx.answerCallbackQuery({ text: 'Жду новое время' })
-    await ctx.reply(beginSettingsEdit(ctx, 'notifyAt'))
+    await ctx.reply(await beginSettingsEdit(ctx, 'notifyAt'))
     return
   }
 
@@ -491,8 +490,9 @@ bot.on('message:text', async (ctx, next) => {
   }
 
   const user = await upsertUserFromContext(ctx)
+  const sessions = await loadActiveSessions(getTelegramUserKey(ctx))
 
-  if (hasInlineEditSession(ctx)) {
+  if (sessions.inlineEdit) {
     const result = await handleInlineEditText(ctx, user.id, text)
 
     if (result.kind === 'updated') {
@@ -504,7 +504,7 @@ bot.on('message:text', async (ctx, next) => {
     return
   }
 
-  if (hasSettingsEditSession(ctx)) {
+  if (sessions.settingsEdit) {
     const result = await handleSettingsEditText(ctx, user.id, text)
 
     if (result.kind === 'updated') {
@@ -519,7 +519,7 @@ bot.on('message:text', async (ctx, next) => {
     return
   }
 
-  if (!isAddBirthdayFlowActive(ctx)) {
+  if (!sessions.addFlow) {
     await next()
     return
   }

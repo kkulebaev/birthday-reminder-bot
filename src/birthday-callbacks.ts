@@ -267,7 +267,7 @@ export async function handleBirthdayCallback(ctx: Context, userId: string, data:
 
   if (action === 'edit-note') {
     await ctx.answerCallbackQuery({ text: record.notes ? 'Жду новую заметку' : 'Жду заметку' })
-    await ctx.reply(beginInlineEdit(ctx, record.id, 'note'))
+    await ctx.reply(await beginInlineEdit(ctx, record.id, 'note'))
     return true
   }
 
@@ -301,13 +301,13 @@ export async function handleBirthdayCallback(ctx: Context, userId: string, data:
 
   if (action === 'edit-rename') {
     await ctx.answerCallbackQuery({ text: 'Жду новое имя' })
-    await ctx.reply(beginInlineEdit(ctx, record.id, 'rename'))
+    await ctx.reply(await beginInlineEdit(ctx, record.id, 'rename'))
     return true
   }
 
   if (action === 'edit-date') {
     await ctx.answerCallbackQuery({ text: 'Жду новую дату' })
-    await ctx.reply(beginInlineEdit(ctx, record.id, 'setdate'))
+    await ctx.reply(await beginInlineEdit(ctx, record.id, 'setdate'))
     return true
   }
 

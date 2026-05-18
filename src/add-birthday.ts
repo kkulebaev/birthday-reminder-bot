@@ -3,6 +3,13 @@ import { InlineKeyboard, type Context } from 'grammy'
 import { prisma } from './db.js'
 import { schedulerService } from './scheduler-service.js'
 import { upsertUserFromContext } from './user.js'
+import {
+  clearSession,
+  getTelegramUserKey,
+  loadSessionPayload,
+  upsertSession,
+  WizardKind,
+} from './wizard-session.js'
 
 export type AddBirthdayDraft = {
   fullName?: string
@@ -14,7 +21,7 @@ export type AddBirthdayDraft = {
 
 export type AddBirthdayStep = 'fullName' | 'day' | 'month' | 'birthYear' | 'notes'
 
-type AddBirthdaySession = {
+export type AddBirthdaySession = {
   step: AddBirthdayStep
   history: AddBirthdayStep[]
   draft: AddBirthdayDraft
@@ -31,29 +38,18 @@ type BackResult = {
   exited: boolean
 }
 
-const sessions = new Map<string, AddBirthdaySession>()
 export const monthLabels = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек']
 
-function getUserKey(ctx: Context): string {
-  const from = ctx.from
-
-  if (!from) {
-    throw new Error('Sender is missing in context')
-  }
-
-  return String(from.id)
+async function loadAddBirthdaySession(ctx: Context): Promise<AddBirthdaySession | null> {
+  return loadSessionPayload<AddBirthdaySession>(getTelegramUserKey(ctx), WizardKind.add_birthday)
 }
 
-function getSession(ctx: Context): AddBirthdaySession | undefined {
-  return sessions.get(getUserKey(ctx))
+async function saveAddBirthdaySession(ctx: Context, session: AddBirthdaySession): Promise<void> {
+  await upsertSession(getTelegramUserKey(ctx), WizardKind.add_birthday, session)
 }
 
-function setSession(ctx: Context, session: AddBirthdaySession): void {
-  sessions.set(getUserKey(ctx), session)
-}
-
-function clearSession(ctx: Context): boolean {
-  return sessions.delete(getUserKey(ctx))
+async function deleteAddBirthdaySession(ctx: Context): Promise<boolean> {
+  return clearSession(getTelegramUserKey(ctx), WizardKind.add_birthday)
 }
 
 export function parseInteger(value: string): number | null {
@@ -251,20 +247,19 @@ function renderAddBirthdayStep(session: AddBirthdaySession): string {
   ].join('\n')
 }
 
-function moveToStep(ctx: Context, nextStep: AddBirthdayStep, nextDraft: AddBirthdayDraft): string {
-  const session = getSession(ctx)
-
-  if (!session) {
-    throw new Error('Birthday session is missing')
-  }
-
+async function moveToStep(
+  ctx: Context,
+  currentSession: AddBirthdaySession,
+  nextStep: AddBirthdayStep,
+  nextDraft: AddBirthdayDraft,
+): Promise<string> {
   const nextSession: AddBirthdaySession = {
     step: nextStep,
-    history: [...session.history, session.step],
+    history: [...currentSession.history, currentSession.step],
     draft: nextDraft,
   }
 
-  setSession(ctx, nextSession)
+  await saveAddBirthdaySession(ctx, nextSession)
 
   return renderAddBirthdayStep(nextSession)
 }
@@ -278,28 +273,29 @@ export function getAddBirthdaySuccessKeyboard(birthdayId: string): InlineKeyboar
     .text('🏠 Главное меню', 'menu:home')
 }
 
-export function beginAddBirthdayFlow(ctx: Context): string {
+export async function beginAddBirthdayFlow(ctx: Context): Promise<string> {
   const session: AddBirthdaySession = {
     step: 'fullName',
     history: [],
     draft: {},
   }
 
-  setSession(ctx, session)
+  await saveAddBirthdaySession(ctx, session)
 
   return renderAddBirthdayStep(session)
 }
 
-export function isAddBirthdayFlowActive(ctx: Context): boolean {
-  return sessions.has(getUserKey(ctx))
+export async function isAddBirthdayFlowActive(ctx: Context): Promise<boolean> {
+  const session = await loadAddBirthdaySession(ctx)
+  return session !== null
 }
 
-export function cancelAddBirthdayFlow(ctx: Context): boolean {
-  return clearSession(ctx)
+export async function cancelAddBirthdayFlow(ctx: Context): Promise<boolean> {
+  return deleteAddBirthdaySession(ctx)
 }
 
-export function getAddBirthdayOptionalKeyboard(ctx: Context): InlineKeyboard | null {
-  const session = getSession(ctx)
+export async function getAddBirthdayOptionalKeyboard(ctx: Context): Promise<InlineKeyboard | null> {
+  const session = await loadAddBirthdaySession(ctx)
 
   if (!session) {
     return null
@@ -319,33 +315,28 @@ export function getAddBirthdayOptionalKeyboard(ctx: Context): InlineKeyboard | n
   return getBaseBackKeyboard()
 }
 
-export function canSkipAddBirthdayStep(ctx: Context): boolean {
-  const session = getSession(ctx)
+export async function canSkipAddBirthdayStep(ctx: Context): Promise<boolean> {
+  const session = await loadAddBirthdaySession(ctx)
 
   return session?.step === 'birthYear' || session?.step === 'notes'
 }
 
-export function canPickAddBirthdayMonth(ctx: Context): boolean {
-  const session = getSession(ctx)
+export async function canPickAddBirthdayMonth(ctx: Context): Promise<boolean> {
+  const session = await loadAddBirthdaySession(ctx)
 
   return session?.step === 'month'
 }
 
-async function finishAddBirthdayFlow(ctx: Context, draftOverride?: AddBirthdayDraft): Promise<{ text: string; birthdayId: string }> {
-  const session = getSession(ctx)
-
-  if (!session) {
-    return {
-      text: 'Сейчас добавление не активно.',
-      birthdayId: '',
-    }
-  }
-
+async function finishAddBirthdayFlow(
+  ctx: Context,
+  session: AddBirthdaySession,
+  draftOverride?: AddBirthdayDraft,
+): Promise<{ text: string; birthdayId: string }> {
   const user = await upsertUserFromContext(ctx)
   const draft = draftOverride ?? session.draft
 
   if (!draft.fullName || draft.day === undefined || draft.month === undefined) {
-    clearSession(ctx)
+    await deleteAddBirthdaySession(ctx)
     throw new Error('Birthday draft is incomplete')
   }
 
@@ -361,7 +352,7 @@ async function finishAddBirthdayFlow(ctx: Context, draftOverride?: AddBirthdayDr
   })
 
   await schedulerService.rebuildBirthdayNotification(birthday.id)
-  clearSession(ctx)
+  await deleteAddBirthdaySession(ctx)
 
   return {
     text: formatBirthdayCreatedMessage(birthday),
@@ -370,7 +361,7 @@ async function finishAddBirthdayFlow(ctx: Context, draftOverride?: AddBirthdayDr
 }
 
 export async function skipAddBirthdayStep(ctx: Context): Promise<AddBirthdayTextResult> {
-  const session = getSession(ctx)
+  const session = await loadAddBirthdaySession(ctx)
 
   if (!session) {
     return {
@@ -386,13 +377,13 @@ export async function skipAddBirthdayStep(ctx: Context): Promise<AddBirthdayText
     }
 
     return {
-      text: moveToStep(ctx, 'notes', updatedDraft),
+      text: await moveToStep(ctx, session, 'notes', updatedDraft),
       completed: false,
     }
   }
 
   if (session.step === 'notes') {
-    const result = await finishAddBirthdayFlow(ctx, {
+    const result = await finishAddBirthdayFlow(ctx, session, {
       ...session.draft,
       notes: null,
     })
@@ -410,8 +401,8 @@ export async function skipAddBirthdayStep(ctx: Context): Promise<AddBirthdayText
   }
 }
 
-export function selectAddBirthdayMonth(ctx: Context, month: number): string {
-  const session = getSession(ctx)
+export async function selectAddBirthdayMonth(ctx: Context, month: number): Promise<string> {
+  const session = await loadAddBirthdaySession(ctx)
 
   if (!session || session.step !== 'month') {
     return 'Сейчас месяц выбрать нельзя.'
@@ -430,11 +421,11 @@ export function selectAddBirthdayMonth(ctx: Context, month: number): string {
     month,
   }
 
-  return moveToStep(ctx, 'birthYear', updatedDraft)
+  return moveToStep(ctx, session, 'birthYear', updatedDraft)
 }
 
-export function goBackAddBirthdayStep(ctx: Context): BackResult {
-  const session = getSession(ctx)
+export async function goBackAddBirthdayStep(ctx: Context): Promise<BackResult> {
+  const session = await loadAddBirthdaySession(ctx)
 
   if (!session) {
     return {
@@ -446,7 +437,7 @@ export function goBackAddBirthdayStep(ctx: Context): BackResult {
   const previousStep = session.history.at(-1)
 
   if (!previousStep) {
-    clearSession(ctx)
+    await deleteAddBirthdaySession(ctx)
 
     return {
       text: 'Возвращаю в главное меню.',
@@ -460,7 +451,7 @@ export function goBackAddBirthdayStep(ctx: Context): BackResult {
     draft: session.draft,
   }
 
-  setSession(ctx, previousSession)
+  await saveAddBirthdaySession(ctx, previousSession)
 
   return {
     text: renderAddBirthdayStep(previousSession),
@@ -472,7 +463,7 @@ export async function handleAddBirthdayText(
   ctx: Context,
   text: string,
 ): Promise<AddBirthdayTextResult> {
-  const session = getSession(ctx)
+  const session = await loadAddBirthdaySession(ctx)
 
   if (!session) {
     return {
@@ -497,7 +488,7 @@ export async function handleAddBirthdayText(
     }
 
     return {
-      text: moveToStep(ctx, 'day', updatedDraft),
+      text: await moveToStep(ctx, session, 'day', updatedDraft),
       completed: false,
     }
   }
@@ -518,7 +509,7 @@ export async function handleAddBirthdayText(
     }
 
     return {
-      text: moveToStep(ctx, 'month', updatedDraft),
+      text: await moveToStep(ctx, session, 'month', updatedDraft),
       completed: false,
     }
   }
@@ -546,7 +537,7 @@ export async function handleAddBirthdayText(
     }
 
     return {
-      text: moveToStep(ctx, 'birthYear', updatedDraft),
+      text: await moveToStep(ctx, session, 'birthYear', updatedDraft),
       completed: false,
     }
   }
@@ -571,7 +562,7 @@ export async function handleAddBirthdayText(
     }
 
     return {
-      text: moveToStep(ctx, 'notes', updatedDraft),
+      text: await moveToStep(ctx, session, 'notes', updatedDraft),
       completed: false,
     }
   }
@@ -580,7 +571,7 @@ export async function handleAddBirthdayText(
     return skipAddBirthdayStep(ctx)
   }
 
-  const result = await finishAddBirthdayFlow(ctx, {
+  const result = await finishAddBirthdayFlow(ctx, session, {
     ...session.draft,
     notes: text.trim() || null,
   })
