@@ -1,0 +1,5 @@
+process.env.TELEGRAM_BOT_TOKEN ??= 'test-bot-token'
+process.env.DATABASE_URL ??= 'postgresql://test:test@localhost:5432/test'
+process.env.DKRON_API_URL ??= 'http://dkron-test:8080'
+process.env.INTERNAL_WEBHOOK_SECRET ??= 'test-internal-webhook-secret-32chars'
+process.env.BOT_INTERNAL_URL ??= 'http://bot-test.local'

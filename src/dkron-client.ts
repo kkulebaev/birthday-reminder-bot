@@ -1,3 +1,4 @@
+import { env } from './env.js'
 import { getSafeErrorMessage } from './telegram-api.js'
 
 type BirthdayJobInput = {
@@ -33,13 +34,7 @@ type DkronJob = {
 }
 
 function getDkronApiUrl(): string {
-  const url = process.env.DKRON_API_URL
-
-  if (!url) {
-    throw new Error('DKRON_API_URL is required')
-  }
-
-  return url.replace(/\/+$/, '')
+  return env.DKRON_API_URL.replace(/\/+$/, '')
 }
 
 export function getBirthdayJobName(birthdayId: string): string {

@@ -1,4 +1,3 @@
-import 'dotenv/config'
 import { Bot, type Context, type InlineKeyboard } from 'grammy'
 import {
   beginAddBirthdayFlow,
@@ -32,6 +31,7 @@ import {
   sendUpdatedBirthdayDetail,
 } from './birthday-callbacks.js'
 import { cancelInlineEdit, handleInlineEditText, hasInlineEditSession } from './birthday-inline-edit.js'
+import { env } from './env.js'
 import { formatStartMessage } from './format.js'
 import { formatHelpMessage } from './help.js'
 import { sendMainMenu, handleMainMenuCallback } from './main-menu.js'
@@ -54,13 +54,7 @@ import { getSafeErrorMessage, safeEditMessageText } from './telegram-api.js'
 import { getUpcomingBirthdaysMessage } from './upcoming-birthdays.js'
 import { isPrivateChat, upsertUserFromContext } from './user.js'
 
-const token = process.env.TELEGRAM_BOT_TOKEN
-
-if (!token) {
-  throw new Error('TELEGRAM_BOT_TOKEN is required')
-}
-
-export const bot = new Bot(token)
+export const bot = new Bot(env.TELEGRAM_BOT_TOKEN)
 
 async function replyWithOptionalKeyboard(ctx: Context, text: string): Promise<void> {
   const keyboard = getAddBirthdayOptionalKeyboard(ctx)

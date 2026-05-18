@@ -1,10 +1,4 @@
-import 'dotenv/config'
 import { Bot } from 'grammy'
+import { env } from './env.js'
 
-const token = process.env.TELEGRAM_BOT_TOKEN
-
-if (!token) {
-  throw new Error('TELEGRAM_BOT_TOKEN is required')
-}
-
-export const notificationBot = new Bot(token)
+export const notificationBot = new Bot(env.TELEGRAM_BOT_TOKEN)

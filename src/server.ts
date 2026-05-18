@@ -1,26 +1,12 @@
-import 'dotenv/config'
 import express, { type Request, type Response } from 'express'
 import { bot } from './bot.js'
 import { prisma } from './db.js'
 import { deleteBirthdayJob } from './dkron-client.js'
+import { env } from './env.js'
 import { formatBirthdayNotification, getBirthdayNotificationKeyboard } from './notification-format.js'
 import { schedulerService } from './scheduler-service.js'
 import { getSafeErrorMessage } from './telegram-api.js'
 import { DeliveryStatus } from './generated/prisma/client.js'
-
-function getWebhookPath(): string {
-  return process.env.TELEGRAM_WEBHOOK_PATH ?? '/telegram/webhook'
-}
-
-function getInternalSecret(): string {
-  const secret = process.env.INTERNAL_WEBHOOK_SECRET
-
-  if (!secret) {
-    throw new Error('INTERNAL_WEBHOOK_SECRET is required')
-  }
-
-  return secret
-}
 
 function getOccurrenceDateUtc(now: Date): Date {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
@@ -79,7 +65,7 @@ async function recordDelivery(input: {
 async function handleFireReminder(req: Request, res: Response): Promise<void> {
   const providedSecret = req.header('x-internal-auth')
 
-  if (!providedSecret || providedSecret !== getInternalSecret()) {
+  if (!providedSecret || providedSecret !== env.INTERNAL_WEBHOOK_SECRET) {
     res.sendStatus(401)
     return
   }
@@ -158,7 +144,7 @@ function createApp() {
     res.status(200).send('ok')
   })
 
-  app.post(getWebhookPath(), async (req: Request, res: Response) => {
+  app.post(env.TELEGRAM_WEBHOOK_PATH, async (req: Request, res: Response) => {
     try {
       await bot.handleUpdate(req.body)
       res.sendStatus(200)
@@ -176,7 +162,7 @@ function createApp() {
 }
 
 export async function startServer(): Promise<void> {
-  const port = Number(process.env.PORT ?? 3000)
+  const port = env.PORT
   const app = createApp()
 
   await bot.init()

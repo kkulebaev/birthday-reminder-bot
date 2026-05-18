@@ -1,5 +1,6 @@
 import { prisma } from './db.js'
 import { deleteBirthdayJob, pingDkron, upsertBirthdayJob } from './dkron-client.js'
+import { env } from './env.js'
 
 const FIRE_REMINDER_PATH = '/internal/fire-reminder'
 
@@ -20,31 +21,15 @@ type ReminderTarget = {
 }
 
 function getInternalWebhookUrl(): string {
-  const override = process.env.BOT_INTERNAL_URL
-
-  if (override) {
-    return `${override.replace(/\/+$/, '')}${FIRE_REMINDER_PATH}`
+  if (env.BOT_INTERNAL_URL) {
+    return `${env.BOT_INTERNAL_URL.replace(/\/+$/, '')}${FIRE_REMINDER_PATH}`
   }
 
-  const host = process.env.RAILWAY_PRIVATE_DOMAIN
-
-  if (!host) {
+  if (!env.RAILWAY_PRIVATE_DOMAIN) {
     throw new Error('BOT_INTERNAL_URL or RAILWAY_PRIVATE_DOMAIN must be set')
   }
 
-  const port = process.env.PORT ?? '3000'
-
-  return `http://${host}:${port}${FIRE_REMINDER_PATH}`
-}
-
-function getInternalWebhookSecret(): string {
-  const secret = process.env.INTERNAL_WEBHOOK_SECRET
-
-  if (!secret) {
-    throw new Error('INTERNAL_WEBHOOK_SECRET is required')
-  }
-
-  return secret
+  return `http://${env.RAILWAY_PRIVATE_DOMAIN}:${env.PORT}${FIRE_REMINDER_PATH}`
 }
 
 function shouldHaveJob(target: Pick<ReminderTarget, 'isReminderEnabled' | 'deletedAt' | 'user'>): boolean {
@@ -132,7 +117,7 @@ export class SchedulerService {
       notifyAt: settings.notifyAt,
       timezone: settings.timezone,
       webhookUrl: getInternalWebhookUrl(),
-      webhookSecret: getInternalWebhookSecret(),
+      webhookSecret: env.INTERNAL_WEBHOOK_SECRET,
     })
   }
 
