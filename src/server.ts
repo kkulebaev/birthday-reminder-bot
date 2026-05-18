@@ -3,6 +3,7 @@ import { bot } from './bot.js'
 import { prisma } from './db.js'
 import { deleteBirthdayJob } from './dkron-client.js'
 import { env } from './env.js'
+import { verifyInternalAuth } from './internal-auth.js'
 import { formatBirthdayNotification, getBirthdayNotificationKeyboard } from './notification-format.js'
 import { schedulerService } from './scheduler-service.js'
 import { getSafeErrorMessage } from './telegram-api.js'
@@ -63,9 +64,7 @@ async function recordDelivery(input: {
 }
 
 async function handleFireReminder(req: Request, res: Response): Promise<void> {
-  const providedSecret = req.header('x-internal-auth')
-
-  if (!providedSecret || providedSecret !== env.INTERNAL_WEBHOOK_SECRET) {
+  if (!verifyInternalAuth(req.header('x-internal-auth'))) {
     res.sendStatus(401)
     return
   }
