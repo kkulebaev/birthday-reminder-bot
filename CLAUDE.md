@@ -19,7 +19,7 @@ Package manager: **pnpm** (pinned via `packageManager` in `package.json`, `pnpm-
 - `pnpm prisma:migrate:dev` — create/apply a dev migration
 - `pnpm prisma:migrate:deploy` — apply pending migrations (production)
 
-Env vars are validated by `src/env.ts` (zod schema) at process boot — startup fails fast with a list of missing or invalid keys. Required: `TELEGRAM_BOT_TOKEN`, `DATABASE_URL` (PostgreSQL), `DKRON_API_URL` (e.g. `http://dkron:8080`), `INTERNAL_WEBHOOK_SECRET` (≥16 chars; shared secret used between dkron jobs and the bot's internal endpoint), and one of `BOT_INTERNAL_URL` or `RAILWAY_PRIVATE_DOMAIN` so dkron can reach the bot's `/internal/fire-reminder` endpoint. Optional: `TELEGRAM_WEBHOOK_PATH` (default `/telegram/webhook`), `PORT` (default `3000`).
+Env vars are validated by `src/env.ts` (zod schema) at process boot — startup fails fast with a list of missing or invalid keys. Required: `TELEGRAM_BOT_TOKEN`, `DATABASE_URL` (PostgreSQL), `DKRON_API_URL` (e.g. `http://dkron:8080`), `INTERNAL_WEBHOOK_SECRET` (≥16 chars; shared secret used between dkron jobs and the bot's internal endpoint), and one of `BOT_INTERNAL_URL` or `RAILWAY_PRIVATE_DOMAIN` so dkron can reach the bot's `/internal/fire-reminder` endpoint. Optional: `TELEGRAM_WEBHOOK_PATH` (default `/telegram/webhook`), `PORT` (default `3000`), `DIRECT_DATABASE_URL` (used by `prisma:migrate:*` when `DATABASE_URL` points at a pgBouncer/Neon pooler — currently unset on Railway).
 
 Tests live in `test/` (vitest `include` is `test/**/*.test.ts`).
 

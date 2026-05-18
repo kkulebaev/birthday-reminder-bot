@@ -11,6 +11,7 @@ const VALID_ENV = {
 const ALL_ENV_KEYS = [
   'TELEGRAM_BOT_TOKEN',
   'DATABASE_URL',
+  'DIRECT_DATABASE_URL',
   'DKRON_API_URL',
   'INTERNAL_WEBHOOK_SECRET',
   'BOT_INTERNAL_URL',
@@ -79,6 +80,23 @@ describe('env', () => {
   it('throws when both BOT_INTERNAL_URL and RAILWAY_PRIVATE_DOMAIN are missing', async () => {
     stubEnv({ ...VALID_ENV, BOT_INTERNAL_URL: undefined })
     await expect(import('../src/env.js')).rejects.toThrow(/BOT_INTERNAL_URL or RAILWAY_PRIVATE_DOMAIN/)
+  })
+
+  it('leaves DIRECT_DATABASE_URL undefined when not set', async () => {
+    stubEnv(VALID_ENV)
+    const { env } = await import('../src/env.js')
+    expect(env.DIRECT_DATABASE_URL).toBeUndefined()
+  })
+
+  it('accepts DIRECT_DATABASE_URL when it is a valid URL', async () => {
+    stubEnv({ ...VALID_ENV, DIRECT_DATABASE_URL: 'postgresql://direct@h:5432/d' })
+    const { env } = await import('../src/env.js')
+    expect(env.DIRECT_DATABASE_URL).toBe('postgresql://direct@h:5432/d')
+  })
+
+  it('throws when DIRECT_DATABASE_URL is not a URL', async () => {
+    stubEnv({ ...VALID_ENV, DIRECT_DATABASE_URL: 'not-a-url' })
+    await expect(import('../src/env.js')).rejects.toThrow(/DIRECT_DATABASE_URL/)
   })
 
   it('accepts RAILWAY_PRIVATE_DOMAIN as the alternative to BOT_INTERNAL_URL', async () => {

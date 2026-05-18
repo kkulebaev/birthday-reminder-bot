@@ -18,6 +18,7 @@ const schema = z.preprocess(
     .object({
       TELEGRAM_BOT_TOKEN: z.string().min(1),
       DATABASE_URL: z.url(),
+      DIRECT_DATABASE_URL: z.url().optional(),
       DKRON_API_URL: z.url(),
       INTERNAL_WEBHOOK_SECRET: z.string().min(16),
       PORT: z.coerce.number().int().positive().default(3000),
