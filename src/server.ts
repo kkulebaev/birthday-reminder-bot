@@ -191,14 +191,21 @@ export async function startServer(): Promise<void> {
   const app = createApp()
 
   await bot.init()
-  await schedulerService.start()
-  await pruneOldProcessedUpdates()
 
   await new Promise<void>((resolve) => {
     app.listen(port, '::', () => {
       console.log(`birthday-reminder-bot webhook server listening on [::]:${port}`)
       resolve()
     })
+  })
+
+  // Run after the server is listening so a serverless wake serves the incoming
+  // request immediately; the dkron job sync tolerates the private-network boot delay.
+  void schedulerService.start().catch((error) => {
+    console.error('Scheduler start error', getSafeErrorMessage(error))
+  })
+  void pruneOldProcessedUpdates().catch((error) => {
+    console.error('Prune processed updates error', getSafeErrorMessage(error))
   })
 }
 

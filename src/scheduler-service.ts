@@ -82,7 +82,7 @@ export class SchedulerService {
   async start(): Promise<void> {
     await reapStaleSessions(60)
 
-    const reachable = await pingDkron()
+    const reachable = await this.waitForDkron()
 
     if (!reachable) {
       console.warn('Dkron is not reachable — skipping startup rebuild')
@@ -90,6 +90,24 @@ export class SchedulerService {
     }
 
     await this.rebuildAllActiveBirthdays()
+  }
+
+  private async waitForDkron(attempts = 10, delayMs = 2000): Promise<boolean> {
+    // Railway private networking is not ready the instant the container boots,
+    // so an immediate dkron ping can fail with a transient "fetch failed".
+    // Retry for a short window before giving up on the startup rebuild.
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      if (await pingDkron()) {
+        return true
+      }
+
+      if (attempt < attempts) {
+        console.warn(`Dkron not reachable yet (attempt ${attempt}/${attempts}); retrying in ${delayMs}ms`)
+        await new Promise((resolve) => setTimeout(resolve, delayMs))
+      }
+    }
+
+    return false
   }
 
   async rebuildBirthdayNotification(birthdayId: string): Promise<void> {
