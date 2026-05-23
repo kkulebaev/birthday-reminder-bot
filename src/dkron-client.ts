@@ -94,9 +94,25 @@ function buildBirthdayJobPayload(input: BirthdayJobInput): DkronJob {
   }
 }
 
+function getDkronAuthHeaders(): Record<string, string> {
+  const user = env.DKRON_BASIC_AUTH_USER
+  const password = env.DKRON_BASIC_AUTH_PASSWORD
+
+  if (!user || !password) {
+    return {}
+  }
+
+  const token = Buffer.from(`${user}:${password}`).toString('base64')
+  return { Authorization: `Basic ${token}` }
+}
+
 async function dkronFetch(path: string, init: Parameters<typeof fetch>[1]): Promise<Response> {
   const url = `${getDkronApiUrl()}${path}`
-  const response = await fetch(url, init)
+  const headers = {
+    ...getDkronAuthHeaders(),
+    ...(init?.headers as Record<string, string> | undefined),
+  }
+  const response = await fetch(url, { ...init, headers })
 
   return response
 }

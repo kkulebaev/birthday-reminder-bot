@@ -20,6 +20,8 @@ const schema = z.preprocess(
       DATABASE_URL: z.url(),
       DIRECT_DATABASE_URL: z.url().optional(),
       DKRON_API_URL: z.url(),
+      DKRON_BASIC_AUTH_USER: z.string().min(1).optional(),
+      DKRON_BASIC_AUTH_PASSWORD: z.string().min(1).optional(),
       INTERNAL_WEBHOOK_SECRET: z.string().min(16),
       PORT: z.coerce.number().int().positive().default(3000),
       TELEGRAM_WEBHOOK_PATH: z.string().min(1).default('/telegram/webhook'),
